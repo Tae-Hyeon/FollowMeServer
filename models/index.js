@@ -15,4 +15,14 @@ const sequelize = new Sequelize(
 db.sequelize = sequelize;
 db.Sequelize = Sequelize;
 
+//db.User = require('./user')(sequelize, Sequelize);
+db.Info = require('./info')(sequelize, Sequelize);
+db.InfoLike = require('./infolike')(sequelize, Sequelize);
+
+// info-user 좋아요 Relation
+// db.User.hasMany(db.InfoLike, { foreignKey: 'uid', sourceKey: 'id'});
+// db.InfoLike.belongsTo(db.User, { foreignKey: 'uid', sourceKey: 'id'});
+db.Info.hasMany(db.InfoLike, { foreignKey: 'iid', sourceKey: 'id'});
+db.InfoLike.belongsTo(db.Info, { foreignKey: 'iid', sourceKey: 'id'});
+
 module.exports = db;

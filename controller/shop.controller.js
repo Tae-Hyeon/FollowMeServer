@@ -194,21 +194,48 @@ exports.readShop = (req, res, next) => {
 
 //Shop Info Read - List
 exports.readShopList = (req, res, next) => {
-    let { category, tag } = req.body;
+    let { category, tag } = req.query;
     let token = req.headers.authorization;
-    console.log(token);
+    console.log(category, tag);
     if( typeof token !== 'undefined')
     {
 
         Info.findAll({
+            attribute: { 
+                exclude : ['createdAt', 'updatedAt', 'deletedAt'] 
+            },
             include: [
                 {
-                    //attribute: ['info_id', 'id'],
+                    attribute: {
+                        include : ['tag_id'],
+                        exclude : ['created_at', 'updated_at', 'deleted_at']
+                    },
                     model: InfoTag,
-                    where: ['info_id = id'],
-                    as: 'Tags'
+                    where: { tag_id: tag }
                 }
-            ]
+            ],
+
+            where: { category: category }
+        })
+
+        .then( info => {
+            let shopnum = Object.keys(info).length;
+            let shops = [];
+            let json = {};
+
+            for(key in info)
+            {
+                json.id = info[key].id;
+                json.shopname = info[key].shopname;
+                json.address = info[key].address;
+                json.grade_avg = info[key].grade_avg;
+                shops.push(json);
+            }
+
+            res.json({
+                shopnum: shopnum,
+                shops: shops
+            });
         })
         
     }

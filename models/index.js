@@ -63,10 +63,10 @@ db.User.belongsToMany(db.Info, { through: 'info_review', foreignKey: 'user_id', 
 db.Info.belongsToMany(db.User, { through: 'info_review', foreignKey: 'info_id', sourceKey: 'id'});
 
 //InfoTag fk - Info, Tag {id}     N:M
-db.Info.hasMany(db.InfoTag, { foreignKey: 'user_id', sourceKey: 'id'});
+db.Info.hasMany(db.InfoTag, { foreignKey: 'info_id', sourceKey: 'id'});
 db.Tag.hasMany(db.InfoTag, { foreignKey: 'tag_id', sourceKey: 'id'});
-// db.Info.belongsToMany(db.Tag, { through: 'info_tag', foreignKey: 'info_id', sourceKey: 'id'});
-// db.Tag.belongsToMany(db.Info, { through: 'info_tag', foreignKey: 'tag_id', sourceKey: 'id'});
+db.Info.belongsToMany(db.Tag, { through: 'info_tag'});
+db.Tag.belongsToMany(db.Info, { through: 'info_tag'});
 // db.InfoTag.belongsTo(db.Info, {foreignKey: 'info_id', sourceKey: 'id'});
 // db.InfoTag.belongsTo(db.Tag, {foreignKey: 'tag_id', sourceKey: 'id'});
 

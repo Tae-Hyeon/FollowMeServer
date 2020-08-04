@@ -1,5 +1,5 @@
 module.exports = (sequelize, DataTypes) => {
-    return sequelize.define('info', {
+    return sequelize.define('course', {
         id: {
             type: DataTypes.INTEGER,
             autoIncrement: true,
@@ -7,48 +7,54 @@ module.exports = (sequelize, DataTypes) => {
             allowNULL: false
         },
 
-        category: {
-            type: DataTypes.INTEGER
+        user_id: {
+            type: DataTypes.INTEGER,
+            allowNULL: false
         },
 
-        shopname: {
+        user_nickname: {
             type: DataTypes.STRING(40),
+            allowNULL: false
+        },
+
+        category: {
+            type: DataTypes.INTEGER,
             allowNULL: true
         },
 
-        address: {
-            type: DataTypes.STRING(100),
+        title: {
+            type: DataTypes.STRING(200),
+            allowNULL: false
+        },
+
+        contents: {
+            type: DataTypes.STRING(1000),
+            allowNULL: false
+        },
+
+        course_info1: {
+            type: DataTypes.INTEGER,
             allowNULL: true
         },
 
-        menu: {
-            type : DataTypes.STRING(500),
+        course_info_2: {
+            type: DataTypes.INTEGER,
             allowNULL: true
         },
 
-        operatingTime: {
-            type: DataTypes.STRING(30),
+        course_info3: {
+            type: DataTypes.INTEGER,
             allowNULL: true
         },
 
-        introduce: {
-            type: DataTypes.STRING(2000),
-            allowNULL: true
-        },
-    
         grade_avg: {
             type: DataTypes.FLOAT,
             allowNULL: true,
             defaultValue: 0
         },
 
-        letitude: {
-            type: DataTypes.INTEGER,
-            allowNULL: true
-        },
-        
-        longitude: {
-            type: DataTypes.INTEGER,
+        dday: {
+            type: DataTypes.DATEONLY,
             allowNULL: true
         },
 
@@ -66,12 +72,12 @@ module.exports = (sequelize, DataTypes) => {
 
         created_at: {
             type: DataTypes.DATE,
-            allowNULL: true,
+            allowNULL: false,
             defaultValue: sequelize.literal('now()')
         }
 
     }, 
-
+        
         {
             timestamp: false,
             paranoid: true,
@@ -79,5 +85,5 @@ module.exports = (sequelize, DataTypes) => {
         }
 
     );
-
+    
 };

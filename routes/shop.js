@@ -1,13 +1,16 @@
 const express = require('express');
 const router = express.Router();
+const ShopController = require('../controller/shop.controller');
+
 const env = process.env;
 const { Sequelize, sequelize, Op} = require('sequelize');
 const { Info, InfoLike } = require('../models');
-const redis = require('redis');
-const connect = redis.createClient(env.REDIS_PORT, env.RDIS_HOST);
+
+const jwt_util = require('../js/jwt_util');
+
 
 //SHOP INFO CREATE
-router.post('/new', function (req, res, next) {
+router.post('/', function (req, res, next) {
   var { shopname, address, menu, category, tag, operating_time, introduce } = req.body;
 
   Info.create({
@@ -21,119 +24,60 @@ router.post('/new', function (req, res, next) {
   }).then( info => {
     res.json({
       code:200,
-      message:"Join Success"
+      message:"Create Success"
     });
   })
 });
 
+//SHOP LIST READ
+router.get('/', ShopController.readShopList);
+
 //SHOP INFO READ
-router.get('/profile/:id', function (req, res, next) {
-  var auth, like;
-  //auth=(req.isAuthenticated()) ? 'login' : 'notlogin'
-  Info.findOne({where: {id : req.params.id}})
-  .then( info => {
-
-    var { id, shopname, address, menu, category, tag, operating_time, introduce, likenum } = info;
-    likenum=info.likenum;
-
-    InfoLike.findOne({where: { iid: id, uid: req.user.id }})
-    .then( infolike => {
-
-      if(infolike==null)
-        like=false;
-      else
-        like=true;
-
-    }).then( result => {
-      res.json({
-        auth : auth,
-        id: id,
-        shopname: shopname,
-        address: address,
-        menu : menu,
-        introduce: introduce,
-        likenum: likenum,
-        like: like
-      });
-    })
-  });
-});
+router.get('/:id', ShopController.readShop);
 
 //SHOP INFO UPDATE, DELETE
-router.post('/profile/:id', function (req, res, next) {
-  let method = req.body.method, id = req.body.id, status = 1;
-  //TODO 권한 인증 user status == 관리자
-  if(status == 2) {
-    if(method == 'upt')
-    {
-      let { id, shopname, address, menu, category, tag, operating_time, introduce } = req.body;
-      Info.updatae({
-        shopname: shopname,
-        address: address,
-        menu: menu,
-        category: category,
-        tag: tag,
-        operating_time: operating_time,
-        introduce: introduce 
-      }, { where : { id : id }
-      }).then( result => {
-        res.json({
-          code:200,
-          message:"Update Success"
-        });
-      });
-    }
-    else if(method == 'del')
-    {
-      Info.destroy({where : {id : id}}).then(result => {
-        res.json({
-          code:200,
-          message:"Delete Success"
-        });
-      });
-    }
-  }
-  else {
-    res.json({
-      code:400,
-      message:"권한이 없습니다."
-    })
-  }
-});
-
-//SHOP LIST READ
-router.get('/list', function (req, res, next) {
-    //TODO 로그인 인증
-    if(true)
-    {
-      // Info List all select
-      Info.findAll({
-        attributes : [ 'id', 'shopname', 'address', 'likenum'] //TODO 평점 추가 필요
-      }).then(info => {
-        let keyname = 'shop', info_list = {};
-        for(let i=0; i<info.length; i++)
-            info_list[keyname+(i+1)] = info[i];
-
-        res.json({
-            info_list: info_list
-        });
-      }).catch( err => {
-        res.json({
-            code : 400,
-            info_list: null,
-            message: "error",
-            err : err
-        });
-      });
-    }
-    else
-    {
-      res.json({
-        code : 400,
-        message : "로그인을 해야합니다."
-      });
-    }
-});
+router.put('/', ShopController.updateShop);
+// function (req, res, next) {
+//   let { method ,id } = req.body;
+//   let status = 1;
+//   //TODO 권한 인증 user status == 관리자
+//   if(status == 2) {
+//     if(method == 'upt')
+//     {
+//       let { id, shopname, address, menu, category, tag, operating_time, introduce } = req.body;
+//       Info.updatae({
+//         shopname: shopname,
+//         address: address,
+//         menu: menu,
+//         category: category,
+//         tag: tag,
+//         operating_time: operating_time,
+//         introduce: introduce 
+//       }, { where : { id : id }
+//       }).then( result => {
+//         res.json({
+//           code:200,
+//           message:"Update Success"
+//         });
+//       });
+//     }
+//     else if(method == 'del')
+//     {
+//       Info.destroy({where : {id : id}}).then(result => {
+//         res.json({
+//           code:200,
+//           message:"Delete Success"
+//         });
+//       });
+//     }
+//   }
+//   else {
+//     res.json({
+//       code:400,
+//       message:"권한이 없습니다."
+//     })
+//   }
+// });
 
 //좋아요
 router.post('/like/:id', function (req, res, next) {

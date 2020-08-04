@@ -1,18 +1,4 @@
 module.exports = (sequelize, DataTypes) => {
-    // info table
-    // - ID (PK) - INT
-    // - shopname (FK,NN) - VARCHAR
-    // - address (NN) - VARCHAR
-    // - menu (NN) - VARCHAR
-    // - link (NN) - VARCHAR - 아직 안넣음
-    // - 카테고리(음식점, 카페, 명소) -INT
-    // - 태그(맛잇는 녀석들, 실내데이트 , 이색데이트) - Json
-    // - 운영시간(요일별) (NN) - CHAR
-    // - likenum (NN) -INT
-    // - reviewnum (NN)- INT
-    // - 소개 (NN) - VARCHAR
-    // - 위도 (NN) - 아직 안넣음
-    // - 경도 (NN) - 아직 안넣음
     return sequelize.define('info', {
         id: {
             type: DataTypes.INTEGER,
@@ -20,52 +6,78 @@ module.exports = (sequelize, DataTypes) => {
             primaryKey: true,
             allowNULL: false
         },
-        shopname: {
-            type: DataTypes.STRING(30),
-            allowNULL: false
-        },
-        address: {
-            type: DataTypes.STRING(50),
-            allowNULL: false
-        },
-        menu: {
-            type : DataTypes.STRING(200),
-            allowNULL: false
-        },
+
         category: {
-            type: DataTypes.INTEGER, // 0 : 음식점 , 1 : 카페, 2 : 명소
-            allowNULL: false
+            type: DataTypes.INTEGER
         },
-        tag: {
-            type: DataTypes.STRING(20), //json
-            allowNULL: false
+
+        shopname: {
+            type: DataTypes.STRING(40),
+            allowNULL: true
         },
+
+        address: {
+            type: DataTypes.STRING(100),
+            allowNULL: true
+        },
+
+        menu: {
+            type : DataTypes.STRING(500),
+            allowNULL: true
+        },
+
         operatingTime: {
             type: DataTypes.STRING(30),
-            allowNULL: false
+            allowNULL: true
         },
-        likenum: {
+
+        introduce: {
+            type: DataTypes.STRING(2000),
+            allowNULL: true
+        },
+    
+        grade_avg: {
+            type: DataTypes.FLOAT,
+            allowNULL: true,
+            defaultValue: 0
+        },
+
+        letitude: {
             type: DataTypes.INTEGER,
-            defaultValue: 0,
-            allowNULL: false
+            allowNULL: true
         },
+        
+        longitude: {
+            type: DataTypes.INTEGER,
+            allowNULL: true
+        },
+
         reviewnum: {
             type: DataTypes.INTEGER,
-            defaultValue: 0,
-            allowNULL: false
+            allowNULL: true,
+            defaultValue: 0
         },
-        introduce: {
-            type: DataTypes.STRING(200),
-            allowNULL: false
+
+        likenum: {
+            type: DataTypes.INTEGER,
+            allowNULL: true,
+            defaultValue: 0
         },
+
         created_at: {
             type: DataTypes.DATE,
             allowNULL: true,
             defaultValue: sequelize.literal('now()')
         }
-    }, {
-        timestamp: false,
-        paranoid: true,
-        underscored: true,
-    });
+
+    }, 
+
+        {
+            timestamp: false,
+            paranoid: true,
+            underscored: true,
+        }
+
+    );
+
 };

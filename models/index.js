@@ -22,6 +22,7 @@ db.User = require('./user')(sequelize, Sequelize);
 
 db.Info = require('./info')(sequelize, Sequelize);
 db.InfoLike = require('./info_like')(sequelize, Sequelize);
+db.InfoDip = require('./info_dip')(sequelize, Sequelize);
 db.InfoReview = require('./info_review')(sequelize, Sequelize);
 db.InfoTag = require('./info_tag')(sequelize, Sequelize);
 db.Tag = require('./tag')(sequelize, Sequelize);
@@ -33,11 +34,32 @@ db.Info.hasMany(db.InfoLike, { foreignKey: 'info_id', sourceKey: 'id'});
 db.User.belongsToMany(db.Info, { through: 'info_like', foreignKey: 'user_id', sourceKey: 'id'});
 db.Info.belongsToMany(db.User, { through: 'info_like', foreignKey: 'info_id', sourceKey: 'id'});
 
+//InfoDip fk - User, Info {id}     N:M
+db.User.hasMany(db.InfoDip, { foreignKey: 'user_id', sourceKey: 'id'});
+db.Info.hasMany(db.InfoDip, { foreignKey: 'info_id', sourceKey: 'id'});
+db.User.belongsToMany(db.Info, { through: 'info_dip', foreignKey: 'user_id', sourceKey: 'id'});
+db.Info.belongsToMany(db.User, { through: 'info_dip', foreignKey: 'info_id', sourceKey: 'id'});
+
 //InfoReview fk - User, Info {id}     N:M
 db.User.hasMany(db.InfoLike, { foreignKey: 'user_id', sourceKey: 'id'});
 db.Info.hasMany(db.InfoLike, { foreignKey: 'info_id', sourceKey: 'id'});
-db.User.belongsToMany(db.Info, { through: 'info_review', foreignKey: 'user_id', sourceKey: 'id'});
-db.Info.belongsToMany(db.User, { through: 'info_review', foreignKey: 'info_id', sourceKey: 'id'});
+// unique -> foreign key 1:1로 중복 허용
+db.User.belongsToMany(db.Info, { 
+  through: {
+    model: 'info_review',
+    unique: false
+  }, 
+  foreignKey: 'user_id', 
+  sourceKey: 'id'
+});
+db.Info.belongsToMany(db.User, { 
+  through: {
+    model: 'info_review',
+    unique: false
+  }, 
+  foreignKey: 'info_id', 
+  sourceKey: 'id'
+});
 
 //InfoTag fk - Info, Tag {id}     N:M
 db.Info.hasMany(db.InfoTag, { foreignKey: 'info_id', sourceKey: 'id'});

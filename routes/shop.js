@@ -18,9 +18,10 @@ router.get('/list', ShopController.readShopList);
 //SHOP INFO READ
 router.get('/one', ShopController.readShop);
 
-//SHOP INFO UPDATE, DELETE
+//SHOP INFO UPDATE
 router.put('/', ShopController.updateShop);
 
+//SHOP INFO DELETE
 router.delete('/', ShopController.deleteShop);
 
 //좋아요
@@ -28,5 +29,17 @@ router.post('/like', ShopController.likeShop);
 
 //좋아요 취소
 router.post('/dislike', ShopController.dislikeShop); 
+
+//SHOP REVIEW CREATE
+router.post('/review', ShopController.createReview);
+
+//SHOP REVIEW LIST READ
+router.get('/review', ShopController.readReviews);
+
+//SHOP REVIEW UPDATE 
+router.put('/review', ShopController.updateReview);
+
+//SHOP REVIEW DELETE
+router.delete('/review', ShopController.deleteReview);
 
 module.exports = router;

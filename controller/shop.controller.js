@@ -3,13 +3,12 @@ const { Sequelize, sequelize, Op} = require('sequelize');
 const { User, Info, InfoLike, InfoReview, InfoTag } = require('../models');
 
 const jwt_util = require('../js/jwt_util');
-
+const crud_util = require('../js/crud_util');
 //Shop Info Create
 exports.createShop = (req, res, next) => {
 
     let { 
-        category, shopname, address,
-        menu, operating_time, introduce,
+        category, shopname, address, menu, operating_time, 
         letitude, longitude, tag1, tag2, tag3 
     } = req.body;
 
@@ -34,7 +33,6 @@ exports.createShop = (req, res, next) => {
                     address: address,
                     menu: menu,
                     operating_time: operating_time,
-                    introduce: introduce,
                     grade_avg: 0,
                     letitude: letitude,
                     longitude: longitude
@@ -158,7 +156,6 @@ exports.readShop = (req, res, next) => {
                 address: info.address,
                 menu: info.menu,
                 operating_time: info.operating_time,
-                introduce: info.introduce,
                 grade_avg: info.grade_avg,
                 letitude: info.letitude,
                 longitude: info.longitude,
@@ -241,14 +238,14 @@ exports.readShopList = (req, res, next) => {
 
 //Shop Info Update
 exports.updateShop = (req, res, next) => {
+    let info_id = req.body.id;
     let { 
-        id, category, shopname, address,
-        menu, operating_time, introduce,
+        category, shopname, address, menu, operating_time, 
         letitude, longitude, tag1, tag2, tag3 
     } = req.body;
     let token = jwt_util.getAccount(req.headers.authorization);
-
-    //console.log(id, category, req.body); 
+    let tags, parameter_set, infotag_id, query;
+    let info_backup;
 
     if( typeof token !== 'undefined')
     {
@@ -263,133 +260,128 @@ exports.updateShop = (req, res, next) => {
             if( user.status == 0 )
             {
 
-                Info.update(
-                    {
-                        category: category,
-                        shopname: shopname,
-                        address: address,
-                        menu: menu,
-                        operating_time: operating_time,
-                        introduce: introduce,
-                        grade_avg: 0,
-                        letitude: letitude,
-                        longitude: longitude
-                    },
-                    { 
-                        where: { id: id } 
-                    }
-                )
+                Info.findOne({
+                    where: { id: info_id }
+                })
+
+                .then( info_back => {
+
+                    info_backup = info_back; // 실패 시 되돌리기 위한 데이터 저장
+                    
+                    return Info.update(
+                        {
+                            category: category,
+                            shopname: shopname,
+                            address: address,
+                            menu: menu,
+                            operating_time: operating_time,
+                            letitude: letitude,
+                            longitude: longitude
+                        },
+                        { 
+                            where: { id: info_id } 
+                        }
+                    )
+                })
 
                 .then( info => {
 
                     return InfoTag.findAll({
-                        attribute: ['id'],
-                        required: true,
-                        where: { info_id: id }
+                        where: { info_id: info_id }
                     })
 
                 })
 
                 .then( infotags => {
-                    console.log(infotags);
-                    let tag_num_before = Object.keys(infotags).length;
-
-                    let tag = [];
-
-                    let delete_;
-                    [tag1, tag2, tag3].forEach(element => {
-                        if(element)
-                            tag.push(element);
-                    });
-
-                    let tag_num_after = tag.length;
-                    let getform = ( id, info_id, tag_id) => { 
-                        return {
-                            update : [
-                                { tag_id: tag_id },
-                                { 
-                                    where: { 
-                                        info_id: info_id, 
-                                        id: id
-                                    }
-                                }
-                            ],
-                            create : {
-                                info_id: info_id,
-                                tag_id: tag_id
-                            }
-                            ,
-                            delete : {
-                                where :{
-                                    id: id
-                                }
-                            }
-                            
-                        }
-                    }
-
-                    let getQuery = ( before, after, form ) => {
-                        if( before < after ){
-
-                        }
-                    };
-
-                    return InfoTag.update(
-                        { tag_id: tag1 },
-                        { 
-                            where: { 
-                                info_id: id, 
-                                id: infotags[0].id 
-                            }
-                        }
-                    )
                     
-                    .then( infotag1 => {
-                        return InfoTag.update(
-                            { tag_id: tag2 },
-                            {
-                                where: { 
-                                    info_id: id, 
-                                    id: infotags[1].id 
-                                }
-                            }
-                        )
-                    })
-
-                    .then( infotag2 => {
-                        return InfoTag.update(
-                            { tag_id: tag3 },
-                            {
-                                where: { 
-                                    info_id: id, 
-                                    id: infotags[2].id 
-                                }
-                            }
-                        )
-                    })
-
-                    .catch( err => {
-                        res.json({
-                            code: 500,
-                            message: "tag update error (shop update)",
-                            error: err
-                        })
-                    });
+                    tags_backup = infotags;
+                    tags = crud_util.getTagArray(tag1, tag2, tag3);
+                    parameter_set = crud_util.getParamsArray(infotags, tags);
+                    infotag_id = parameter_set[0];
+                    tags = parameter_set[1];
+                    query = parameter_set[2];
+                    console.log(parameter_set);
+                    return crud_util.execCRUD(infotag_id[0], info_id, tags[0], query[0]);
                 })
-                
-                .then( result => {
+
+                .then( infotag1 => {
+                    console.log("result 0 : " +infotag1);
+                    return crud_util.execCRUD(infotag_id[1], info_id, tags[1], query[1]);
+                })
+
+                .then( infotag2 => {
+                    console.log("result 1 : " +infotag2);
+                    return crud_util.execCRUD(infotag_id[2], info_id, tags[2], query[2]);
+                })
+
+                .then( infotag3 => {
+                    console.log("result 2 : " +infotag3);
                     res.json({
                         code: 200,
                         message:"Update Success"
                     });
                 })
-                    
+
                 .catch( err => {
-                    console.log(err);
-                    res.json({
-                        code: 500,
-                        message: "shop update error (shop update)",
-                        error: err
+                    console.log("error occure in tag update \n"+ err);
+                    Info.update(
+                        {
+                            category: info_backup.category,
+                            shopname: info_backup.shopname,
+                            address: info_backup.address,
+                            menu: info_backup.menu,
+                            operating_time: info_backup.operating_time,
+                            letitude: info_backup.letitude,
+                            longitude: info_backup.longitude
+                        },
+                        { 
+                            where: { id: info_id } 
+                        }
+                    )
+
+                    // .then( info => {
+
+                    //     if(tags_backup)
+                    //         return crud_util.getform(tags_backup[0].id, info_id, tags_backup[0].tag_id, backup_query[0]);
+                    //     else
+                    //         return new Promise();
+                    // })
+
+                    // .then( infotag1 => {
+                    //     if(tags_backup[1])
+                    //         return crud_util.getform(tags_backup[1].id, info_id, tags_backup[1].tag_id, backup_query[1])
+                    //     else
+                    //     {
+                    //         return new Promise( (resolve, reject) => {
+                    //             reject(new Error('no data to delete'));
+                    //         });
+                    //     }
+                    // })
+
+                    // .then( infotag2 => {
+                    //     if(tags_backup[2])
+                    //         return crud_util.getform(tags_backup[2].id, info_id, tags_backup[2].tag_id, backup_query[2])
+                    //     else
+                    //     {
+                    //         return new Promise( (resolve, reject) => {
+                    //             reject(new Error('no data to delete'));
+                    //         });
+                    //     }
+                    // })
+
+                    .then( result => {
+                        res.json({
+                            code: 500,
+                            message: "shop update error (shop update)"
+                        });
+                    })
+                    
+                    .catch( err => {
+                        console.log(err);
+                        res.json({
+                            code: 500,
+                            message: "shop backup error (shop update)"
+                        });
                     });
                 });
             }
@@ -398,17 +390,17 @@ exports.updateShop = (req, res, next) => {
 
                 res.json({
                     code: 403,
-                    message: "No Permission (shop update) "
+                    message: "No Permission (shop update)"
                 });
 
             }
         })
         
         .catch( err => {
+            console.log(err);
             res.json({
                 code: 500,
-                message: "user select error (shop update)",
-                error: err
+                message: "user select error (shop update)"
             });
         });
     }
@@ -506,15 +498,11 @@ exports.likeShop = (req, res, next) => {
         .then( infolike => {
             if( infolike )
             {
-                //console.log(infolike);
-                // res.json({
-                //     code: 500,
-                //     message: "like fail - already like (shop like)"
-                // });
-                return new Promise( (resolve, reject) => {
-                    reject();
-                });
+                //이미 좋아요가 있으면 reject
                 //reject 시키지 않으면 계속 resolve되어 increase하여 좋아요 수가 늘어남
+                return new Promise( (resolve, reject) => {
+                    reject(new Error('already like'));
+                });
             }
             return InfoLike.create({
                 user_id: token.user_id,
@@ -574,16 +562,18 @@ exports.dislikeShop = (req, res, next) => {
             if( !infolike )
             {
                 return new Promise( (resolve, reject) => {
-                    reject();
+                    reject(new Error('no data to delete'));
                 });
             }
-
-            return InfoLike.destroy({
-                where : {
-                    user_id: token.user_id,
-                    info_id: info_id
-                }
-            });
+            else
+            {
+                return InfoLike.destroy({
+                    where : {
+                        user_id: token.user_id,
+                        info_id: info_id
+                    }
+                });
+            }
         })
 
         .then( infolike => {
@@ -618,15 +608,332 @@ exports.dislikeShop = (req, res, next) => {
     }
 };
 
-exports.createReview = (re1, res, next) => {
+exports.dipShop = (req, res, next) => {
+    let info_id = req.body.id;
+    let token = jwt_util.getAccount(req.headers.authorization);
 
+    if( typeof token !== 'undefined')
+    {
+        // 테스트로는 token의 user_id를 받아서 user를 따로 조회 안하도록 만듦 -> 나중에 수정 가능
+        InfoDip.findOne({
+            where : {
+                user_id: token.user_id,
+                info_id: info_id
+            }
+        })
+        .then( infodip => {
+            if( infodip )
+            {
+                //이미 찜되어 있으면 reject
+                return new Promise( (resolve, reject) => {
+                    reject(new Error('already dip'));
+                });
+            }
+            return Infodip.create({
+                user_id: token.user_id,
+                info_id: info_id
+            })
+        })
+
+        .then( result =>{
+            res.json({
+              code: 200,
+              message: "create success (shop dip)"
+            });
+        })
+        
+        .catch( err => {
+            res.json({
+                code: 500,
+                message: "create error (shop dip)"
+            });
+        });
+    }
+    else
+    {
+
+        res.json({
+            code: 400,
+            message: "Can't read token (shop dip)"
+        });
+
+    }
 };
 
-exports.updateReview = (re1, res, next) => {
+exports.undipShop = (req, res, next) => {
+    let info_id = req.body.id;
+    let token = jwt_util.getAccount(req.headers.authorization);
 
+    if( typeof token !== 'undefined')
+    {
+        // 테스트로는 token의 user_id를 받아서 user를 따로 조회 안하도록 만듦 -> 나중에 수정 가능
+        InfoDip.findOne({
+            where : {
+                user_id: token.user_id,
+                info_id: info_id
+            }
+        })
+
+        .then( infodip => {
+
+            if( !infodip )
+            {
+                return new Promise( (resolve, reject) => {
+                    reject(new Error('no data'));
+                });
+            }
+            else
+            {
+                return InfoDip.destroy({
+                    where : {
+                        user_id: token.user_id,
+                        info_id: info_id
+                    }
+                });
+            }
+        })
+
+        .then( result =>{
+            res.json({
+              code: 200,
+              message: "delete success (shop undip)"
+            });
+        })
+        
+        .catch( err => {
+            res.json({
+                code: 500,
+                message: "Can't delete : no data in db already (shop undip)"
+            });
+        });
+    }
+    else
+    {
+
+        res.json({
+            code: 400,
+            message: "Can't read token (shop cancle like)"
+        });
+
+    }
 };
 
-exports.deleteReview = (re1, res, next) => {
+exports.readReviews = (req, res, next) => {
+    let info_id = req.body.id;
+    let token = jwt_util.getAccount(req.headers.authorization);
 
+    if( typeof token !== 'undefined')
+    {
+        InfoReview.findAll({
+            // where : {
+                
+            // }
+        })
+
+        .then( inforeviews => {
+
+            let reviewnum = Object.keys(inforeviews).length;
+            let reviews = [];
+            let json = {};
+
+            for(key in info)
+            {
+                json.id = inforeviews[key].id;
+                json.grade = inforeviews[key].grade;
+                json.nickname = inforeviews[key].nickname;
+                json.review = inforeviews[key].contents;
+                reviews.push(json);
+            }
+
+            res.json({
+                reviewnum: reviewnum,
+                reveiws : reviews
+            })
+            
+        })
+        
+        .catch( err => {
+            res.json({
+                code: 500,
+                message: "read error (shop read reviews)"
+            });
+        });
+    }
+    else
+    {
+
+        res.json({
+            code: 400,
+            message: "Can't read token (shop cancle like)"
+        });
+
+    }
+};
+
+exports.createReview = (req, res, next) => {
+    let { info_id, grade, review } = req.body;
+    let token = jwt_util.getAccount(req.headers.authorization);
+
+    if( typeof token !== 'undefined')
+    {
+        InfoReview.create({
+                info_id: info_id,
+                user_id: token.user_id,
+                grade: grade,
+                contents: review
+        })
+
+        .then( inforeview => {
+            
+            return Info.update(
+                { 
+                    grade_avg: Sequelize.literal('((grade_avg * reviewnum) + ' + grade + ') / (reviewnum + 1)' ),
+                    reviewnum: Sequelize.literal('reviewnum + 1')
+                },
+                { where : { id: info_id } }
+            );
+        })
+
+        .then( result =>{
+            res.json({
+              code: 200,
+              message: "create success (shop review create)"
+            });
+        })
+        
+        .catch( err => {
+            console.log(err);   
+            res.json({
+                code: 500,
+                message: "create error (shop review create)"
+            });
+        });
+    }
+    else
+    {
+
+        res.json({
+            code: 400,
+            message: "Can't read token (shop review create)"
+        });
+
+    }
+};
+
+exports.updateReview = (req, res, next) => {
+    let review_id = req.body.id;
+    let { grade, review } = req.body;
+    let token = jwt_util.getAccount(req.headers.authorization);
+
+    if( typeof token !== 'undefined')
+    {
+        InfoReview.findOne({
+            where : { id: review_id }
+        })
+
+        .then( inforeview => {
+
+            if( !inforeview )
+            {
+                return new Promise( (resolve, reject) => {
+                    reject(new Error('no data to update'));
+                });
+            }
+            else
+            {
+                return InfoReview.update(
+                    {
+                        grade: grade,
+                        contents: review
+                    },
+                    {
+                        where: {
+                            user_id: token.user_id,
+                            id: review_id
+                        }
+                    }
+                );
+            }
+        })
+
+        .then( inforeview => {
+            res.json({
+                code: 200,
+                message: "update success (shop update review)"
+            })
+        })
+        
+        .catch( err => {
+            res.json({
+                code: 500,
+                message: "update error (shop update review)"
+            });
+        });
+    }
+    else
+    {
+
+        res.json({
+            code: 400,
+            message: "Can't read token (shop cancle like)"
+        });
+
+    }
+};
+
+exports.deleteReview = (req, res, next) => {
+    let info_id = req.body.id;
+    let token = jwt_util.getAccount(req.headers.authorization);
+
+    if( typeof token !== 'undefined')
+    {
+        InfoReview.destroy({
+            where : {
+                user_id: token.user_id,
+                info_id: info_id
+            }
+        })
+
+        .then( inforeview => {
+
+            // review 없을 시 reject
+            if( !inforeview )
+            {
+                return new Promise( (resolve, reject) => {
+                    reject(new Error('no data to delete'));
+                });
+            }
+            else
+            {
+                return Info.decrement(
+                    { reviewnum: 1 },
+                    { where : { id: info_id } }
+                );
+            }
+        })
+
+        .then( result =>{
+            res.json({
+              code: 200,
+              message: "delete success (shop review delete)"
+            });
+        })
+        
+        .catch( err => {
+            res.json({
+                code: 500,
+                message: "delete error (shop review delete)"
+            });
+        });
+    }
+    else
+    {
+
+        res.json({
+            code: 400,
+            message: "Can't read token (shop review delete)"
+        });
+
+    }
 };
 

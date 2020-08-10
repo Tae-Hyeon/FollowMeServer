@@ -30,11 +30,6 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.STRING(30),
             allowNULL: true
         },
-
-        introduce: {
-            type: DataTypes.STRING(2000),
-            allowNULL: true
-        },
     
         grade_avg: {
             type: DataTypes.FLOAT,
@@ -42,7 +37,7 @@ module.exports = (sequelize, DataTypes) => {
             defaultValue: 0
         },
 
-        letitude: {
+        latitude: {
             type: DataTypes.INTEGER,
             allowNULL: true
         },

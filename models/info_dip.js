@@ -1,5 +1,5 @@
 module.exports = (sequelize, DataTypes) => {
-    return sequelize.define('info_review', {
+    return sequelize.define('info_dip', {
 
         id: {
             type: DataTypes.INTEGER,
@@ -18,21 +18,6 @@ module.exports = (sequelize, DataTypes) => {
             allowNULL: false
         },
 
-        grade: {
-            type: DataTypes.INTEGER,
-            allowNULL: false,
-            defaultValue: 0
-        },
-
-        contents: {
-            type: DataTypes.STRING(500),
-            allowNULL: false
-        },
-
-        // photo: {
-        //     type: DataTypes.JSONB()
-        // },
-
         created_at: {
             type: DataTypes.DATE,
             allowNULL: true,
@@ -43,7 +28,7 @@ module.exports = (sequelize, DataTypes) => {
 
         {
             timestamp: false,
-            paranoid: true,
+            //paranoid: true,
             underscored: true,
         }
 

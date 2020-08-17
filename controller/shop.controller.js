@@ -92,7 +92,7 @@ exports.createShop = (req, res, next) => {
         .catch( err => {
             res.json({
                 code: 500,
-                message: "user select error (shop update)",
+                message: "user select error (shop create)",
                 error: err
             });
         });
@@ -180,7 +180,7 @@ exports.readShop = (req, res, next) => {
 //Shop Info Read - List
 exports.readShopList = (req, res, next) => {
     let { category, tag } = req.query;
-    let token = req.headers.authorization;
+    let token = jwt_util.getAccount(req.headers.authorization);
     //console.log(category, tag, token);
 
     if( typeof token !== 'undefined')
@@ -324,6 +324,7 @@ exports.updateShop = (req, res, next) => {
 
                 .catch( err => {
                     console.log("error occure in tag update \n"+ err);
+                    //backup transaction 시간날 때 찾아보기.
                     Info.update(
                         {
                             category: info_backup.category,

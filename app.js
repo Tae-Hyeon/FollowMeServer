@@ -9,9 +9,6 @@ const { sequelize } = require('sequelize');
 const models = require("./models/index.js");
 
 const indexRouter = require('./routes/index');
-// var users = require('./routes/users');
-const shopRouter = require('./routes/shop'); // 가게 CRUD
-const shopAutoInput = require('./routes/shopAutoInput'); // 가게 정보 자동 입력
 const courseRouter = require('./routes/course');
 
 const app = express();
@@ -37,9 +34,6 @@ app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/', indexRouter);
-//app.use('/users', users);
-app.use('/shop', shopRouter);
-app.use('/shopAuto', shopAutoInput);
 app.use('/course', courseRouter);
 
 // catch 404 and forward to error handler

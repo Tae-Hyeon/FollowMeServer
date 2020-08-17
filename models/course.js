@@ -37,7 +37,7 @@ module.exports = (sequelize, DataTypes) => {
             allowNULL: true
         },
 
-        course_info_2: {
+        course_info2: {
             type: DataTypes.INTEGER,
             allowNULL: true
         },
@@ -60,20 +60,20 @@ module.exports = (sequelize, DataTypes) => {
 
         reviewnum: {
             type: DataTypes.INTEGER,
-            allowNULL: true,
+            allowNULL: false,
             defaultValue: 0
         },
 
         likenum: {
             type: DataTypes.INTEGER,
-            allowNULL: true,
+            allowNULL: false,
             defaultValue: 0
         },
 
-        created_at: {
-            type: DataTypes.DATE,
+        share: {
+            type: DataTypes.TINYINT(1),
             allowNULL: false,
-            defaultValue: sequelize.literal('now()')
+            defaultValue: 0
         }
 
     }, 

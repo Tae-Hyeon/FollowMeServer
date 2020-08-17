@@ -42,7 +42,7 @@ module.exports = (sequelize, DataTypes) => {
             defaultValue: 0
         },
 
-        letitude: {
+        latitude: {
             type: DataTypes.INTEGER,
             allowNULL: true
         },

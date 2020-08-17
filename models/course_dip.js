@@ -1,5 +1,5 @@
 module.exports = (sequelize, DataTypes) => {
-    return sequelize.define('info_like', {
+    return sequelize.define('course_dip', {
 
         id: {
             type: DataTypes.INTEGER,
@@ -8,7 +8,7 @@ module.exports = (sequelize, DataTypes) => {
             allowNULL: false
         },
         
-        info_id: {
+        course_id: {
             type: DataTypes.INTEGER,
             allowNULL: false
         },
@@ -28,7 +28,7 @@ module.exports = (sequelize, DataTypes) => {
 
         {
             timestamp: false,
-            paranoid: true,
+            //paranoid: true,
             underscored: true,
         }
 

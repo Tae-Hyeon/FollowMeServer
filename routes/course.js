@@ -10,7 +10,7 @@ router.post('/', CourseController.createCourse);
 router.get('/one', CourseController.readCourse);
 
 //COURSE READ LIST
-router.get('/list', CourseController.readCourse);
+router.get('/list', CourseController.readCourseList);
 
 //COURSE READ MY LIST
 router.get('/my', CourseController.readMyCourse);

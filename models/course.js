@@ -37,8 +37,18 @@ module.exports = (sequelize, DataTypes) => {
             allowNULL: true
         },
 
+        shopname1: {
+            type: DataTypes.STRING(40),
+            allowNULL: true
+        },
+
         course_info2: {
             type: DataTypes.INTEGER,
+            allowNULL: true
+        },
+
+        shopname2: {
+            type: DataTypes.STRING(40),
             allowNULL: true
         },
 
@@ -47,6 +57,11 @@ module.exports = (sequelize, DataTypes) => {
             allowNULL: true
         },
 
+        shopname3: {
+            type: DataTypes.STRING(40),
+            allowNULL: true
+        },
+        
         grade_avg: {
             type: DataTypes.FLOAT,
             allowNULL: true,

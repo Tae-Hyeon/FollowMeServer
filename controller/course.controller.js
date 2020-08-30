@@ -1,7 +1,7 @@
 const env = process.env;
 const { Sequelize, sequelize, Op, QueryTypes} = require('sequelize');
 const { User, Course, CourseLike, CourseReview, CourseShare, Info } = require('../models');
-
+const model = require('../models');
 const jwt_util = require('../js/jwt_util');
 
 //COURSE CREATE
@@ -62,8 +62,7 @@ exports.createCourse = (req, res, next) => {
 exports.readCourse = (req, res, next) => {
     let course_id = req.query.id;
     let token = jwt_util.getAccount(req.headers.authorization);
-    let user_nickname, like, info_num, info_id1, info_id2, info_id3, shops = [];
-    let course_data;
+    let like, shops = [];
 
     if( typeof token !== 'undefined')
     {
@@ -73,77 +72,58 @@ exports.readCourse = (req, res, next) => {
         })
         
         .then( user => {
-            return Course.findOne({
-                include: [
-                    {
-                        model: CourseLike,
-                        attributes: ['id', 'user_id', 'course_id'],
-                        required: false, // left outer join
-                        where: { 
-                            user_id : user.id,
-                            course_id : course_id 
-                        }
-                    },
-                    // info join 시 마지막으로 건 freign key -> course.course_info3 = info.id 조건을 자동으로 생성해 검색이 제대로 되지 않음.
-                    // {
-                    //     model: Info,
-                    //     attributes: ['id', 'shopname', 'address', 'grade_avg', 'latitude', 'longitude'],
-                    //     where: { 
-                    //         id: {
-                    //             [Op.or] : [
-                    //                 Sequelize.literal('course.course_info1'),
-                    //                 Sequelize.literal('course.course_info2'),
-                    //                 Sequelize.literal('course.course_info3')
-                    //             ]
-                    //         }
-                    //     }
-                    // }
-                ],
-                where: { id: course_id }
-            });
+            let query = `
+            SELECT 
+                courses.id, courses.user_id AS user_id, courses.user_nickname, courses.title,
+                courses.contents, courses.dday, courses.grade_avg, 
+                courses.course_info1, courses.course_info2, courses.course_info3, 
+                course_likes.id AS liked,
+                infos.id AS info_id, infos.shopname AS shopname, infos.address AS address,
+                infos.grade_avg AS info_grade_avg, infos.latitude AS latitude, infos.longitude AS longitude
+            FROM hanium.courses 
+            LEFT OUTER JOIN (hanium.course_likes)
+            ON ( courses.id = course_likes.course_id )
+            LEFT OUTER JOIN (hanium.infos)
+            ON ( courses.course_info1 = infos.id OR courses.course_info2 = infos.id OR courses.course_info3 = infos.id )
+            WHERE ( courses.id = :course_id )`;
+
+            return model.sequelize.query(
+                query, 
+                {
+                    replacements: {'course_id': course_id},
+                    type: QueryTypes.SELECT
+                }
+            )
         })
 
-        .then( course => {
-            course_data = course;
+        .then( courses => {
+            
+            console.log( courses );
 
-            if( !course.course_likes )
+            if( !courses[0].liked )
                 like = 0;
             else
                 like = 1;
-            
-            return Info.findAll({
-                where: {
-                    id: {
-                        [Op.or]: [
-                            course.course_info1,
-                            course.course_info2,
-                            course.course_info3
-                        ]
-                    }
-                }
-            });
-        })
 
-        .then( info => {
-            for( i = 0; i < Object.keys(info).length; i++ )
+            for( i = 0; i < Object.keys(courses).length; i++ )
             {
                 let json = {};
-                json.id = info[i].id;
-                json.shopname = info[i].shopname;
-                json.address = info[i].address;
-                json.grade_avg = info[i].grade_avg;
-                json.latitude = info[i].latitude;
-                json.longitude = info[i].longitude;
+                json.id = courses[i].info_id;
+                json.shopname = courses[i].shopname;
+                json.address = courses[i].address;
+                json.grade_avg = courses[i].info_grade_avg;
+                json.latitude = courses[i].latitude;
+                json.longitude = courses[i].longitude;
                 console.log(i," : ", json);
                 shops.push(json);
             }
 
             res.json({
-                id: course_data.id,
-                user_nickname: course_data.user_nickname,
-                title: course_data.title,
-                contents: course_data.contents,
-                grade_avg: course_data.grade_avg,
+                id: courses[0].id,
+                user_nickname: courses[0].user_nickname,
+                title: courses[0].title,
+                contents: courses[0].contents,
+                grade_avg: courses[0].grade_avg,
                 like: like,
                 shops: shops
             });
@@ -161,7 +141,7 @@ exports.readCourse = (req, res, next) => {
 };
 
 //COURSE READ - LIST
-exports.readCourse = (req, res, next) => {
+exports.readCourseList = (req, res, next) => {
     let token = jwt_util.getAccount(req.headers.authorization);
     let include_array = [], json = {}, outer_where = {};
     let courses = [], info_id_array = [], info_id_set = [], set_index = 0;
@@ -265,49 +245,36 @@ exports.readCourse = (req, res, next) => {
 
 //MY COURSE READ - LIST
 exports.readMyCourse = (req, res, next) => {
-    let { view_type } = req.query; // option : my, share, all
     let token = jwt_util.getAccount(req.headers.authorization);
     let include_array = [], json = {}, outer_where = {};
     let courses = [], info_id_array = [], info_id_set = [], set_index = 0;
+    let user_id = token.user_id;
 
     if( typeof token !== 'undefined')
     {
-        switch(view_type)
-        {
-            case 0:
-                outer_where = {
-                    'user_id' : {
-                        [Op.or] : [
-                            token.user_id,
-                            Sequelize.literal('course_shares.shared_user_id = ' + token.user_id)
-                        ]
-                    }
-                }
-                outer_where['']
-            case 2:
-                json['model'] = CourseShare;
-                json['attributes'] = {
-                    'include' : ['course_id', 'shared_user_id'],
-                    'exclude' : ['created_at', 'updated_at', 'deleted_at']
-                }
-                //json['where'] = { 'shared_user_id' : token.user_id; }
-                include_array.push(json);
-                break;
-            case 1:
-                outer_where['user_id'] = token.user_id;
-                break;
-        }
+        //공유 받은 코스와 내가 만든 코스들 모두 select
+        let query = `
+        SELECT 
+            courses.id, courses.user_id AS user_id, courses.title, courses.dday, courses.grade_avg, 
+            courses.course_info1, courses.shopname1, courses.course_info2, courses.shopname2, courses.course_info3, courses.shopname3, 
+            course_shares.course_id AS course_id, course_shares.shared_user_id AS shared_user_id 
+        FROM hanium.courses 
+        LEFT OUTER JOIN (hanium.course_shares)
+        ON courses.id = course_shares.course_id 
+        WHERE (user_id = :user_id OR shared_user_id = :user_id ) 
+        GROUP BY courses.id`;
 
-
-        Course.findAll({
-            attributes: { 
-                exclude : ['createdAt', 'updatedAt', 'deletedAt'] 
-            },
-            include: include_array,
-            where: outer_where
-        })
+        model.sequelize.query(
+            query, 
+            {
+                replacements: {'user_id': user_id},
+                type: QueryTypes.SELECT
+            }
+        )
 
         .then( course => {
+
+            console.log(course);
             for( i = 0; i < Object.keys(course).length; i++)
             {
                 //course data to response
@@ -316,11 +283,11 @@ exports.readMyCourse = (req, res, next) => {
                 json.title = course[i].title;
                 json.dday = course[i].ddat;
                 json.grade_avg = course[i].grade_avg;
+                json.share = ( course[i].shared_user_id == user_id ) ? 1 : 0;
                 json.shops = [];
                 courses.push(json);
 
-                // info join 시 마지막으로 건 freign key -> course.course_info3 = info.id 조건을 자동으로 생성해 검색이 제대로 되지 않음.
-                // 때문에 info select을 또 하는데, info를 중복해서 검사하지 않기 위해 id를 배열로 저장하고, 중복을 제거함.
+                // info를 중복해서 검사하지 않기 위해 id를 배열로 저장하고, 중복을 제거함.
                 let id_array = [];
                 id_array[0] = course[i].course_info1,
                 id_array[1] = course[i].course_info2,
@@ -378,6 +345,7 @@ exports.readMyCourse = (req, res, next) => {
                     }
                 }
             }
+
             res.json({
                 courses: courses
             });
@@ -398,23 +366,33 @@ exports.readMyCourse = (req, res, next) => {
 //COURSE UPDATE
 exports.updateCourse = (req, res, next) => {
     let course_id = req.body.id;
-    let { category, title, dday, contents, shop_id1, shop_id2, shop_id3} = req.body;
+    let { category, title, dday, contents, shop_id1, shopname1, shop_id2, shopname2, shop_id3, shopname3} = req.body;
     let token = jwt_util.getAccount(req.headers.authorization);
 
     if( typeof token !== 'undefined')
     {
 
-        Course.findOne({
-            include: {
-                model: CourseShare,
-                require: false,
-                where: { shared_user_id : token.user_id }
-            },
-            where: {
-                course_id: course_id, 
-                user_id: token,user_id 
+        let user_id = token.user_id;
+
+        // 수정할 권한이 있는지 확인 ( 내소유 or 공유 받은 코스 )
+        let query = `
+        SELECT 
+            courses.id, courses.user_id AS user_id, courses.title, courses.dday, courses.grade_avg, 
+            courses.course_info1, courses.shopname1, courses.course_info2, courses.shopname2, courses.course_info3, courses.shopname3, 
+            course_shares.course_id AS course_id, course_shares.shared_user_id AS shared_user_id 
+        FROM hanium.courses 
+        LEFT OUTER JOIN (hanium.course_shares)
+        ON courses.id = course_shares.course_id 
+        WHERE (user_id = :user_id OR shared_user_id = :user_id ) 
+        GROUP BY courses.id`;
+
+        model.sequelize.query(
+            query, 
+            {
+                replacements: {'user_id': user_id},
+                type: QueryTypes.SELECT
             }
-        })
+        )
 
         .then( course => {
             if( course )
@@ -424,9 +402,12 @@ exports.updateCourse = (req, res, next) => {
                     title: title, 
                     dday: dday, 
                     contents: contents, 
-                    course_info1: shop_id1, 
+                    course_info1: shop_id1,
+                    shopname1: shopname1,
                     course_info2: shop_id2, 
-                    course_info3: shop_id3
+                    shopname2: shopname2,
+                    course_info3: shop_id3,
+                    shopname3: shopname3
                 })
 
                 .then( updated_course => {
@@ -481,35 +462,25 @@ exports.updateShare = (req, res, next) => {
     {
         let user_id = token.user_id;
 
-        // Course와 Share를 검사해 Course가 자신의 소유이거나, 공유된 것이라면 수정을 할 수 있도록 하기 위해 Select를 하려 했지만,
-        // include 바깥에서 CourseShare의 column에 접근을 하지 못해 완성하지 못하고 있음
-        // ERROR : Unknown column 'course_shares.course_id' in 'where clause'
-        Course.findOne({ 
-            // attributes: ['id', 'user_id'],
-            // include: [
-            //     {
-            //         model: CourseShare,
-            //         attributes: ['id', 'course_id', 'shared_user_id'],
-            //         require: true,
-            //         where: {
-            //             course_id: course_id,
-            //             shared_user_id: user_id
-            //         }
-            //     }
-            // ],
-            // where: {
-            //     [Op.or] : {
-            //         [Op.and] : [
-            //             { id: course_id },
-            //             { user_id: user_id }, 
-            //         ],
-            //         [Op.and] : [
-            //             { '$course_shares.course_id$': course_id },
-            //             { '$course_shares.user_id$': user_id}, 
-            //         ]
-            //     }
-            // },
-        })
+        // 수정할 권한이 있는지 확인 ( 내소유 or 공유 받은 코스 )
+        let query = `
+        SELECT 
+            courses.id, courses.user_id AS user_id, courses.title, courses.dday, courses.grade_avg, 
+            courses.course_info1, courses.shopname1, courses.course_info2, courses.shopname2, courses.course_info3, courses.shopname3, 
+            course_shares.course_id AS course_id, course_shares.shared_user_id AS shared_user_id 
+        FROM hanium.courses 
+        LEFT OUTER JOIN (hanium.course_shares)
+        ON courses.id = course_shares.course_id 
+        WHERE (user_id = :user_id OR shared_user_id = :user_id ) 
+        GROUP BY courses.id`;
+
+        model.sequelize.query(
+            query, 
+            {
+                replacements: {'user_id': user_id},
+                type: QueryTypes.SELECT
+            }
+        )
 
         .then( course => {
             console.log(course);

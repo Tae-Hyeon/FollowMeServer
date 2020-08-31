@@ -1,4 +1,24 @@
 const {InfoTag } = require('../models');
+const { readShopList } = require('../controller/shop.controller');
+
+exports.getShopData = (info) => {
+    return new Promise( resolve => {
+        let json = {};
+
+        json.id = info.id;
+        json.shopname = info.shopname;
+        json.address = info.address;
+        json.grade_avg = info.grade_avg;
+
+        if(info.main_photo)
+        {
+            let photo_num = "photo" + info.main_photo;
+            json.photo = info[photo_num];
+        }
+
+        resolve(json);
+    })
+}
 
 exports.getTagArray = (tag1, tag2, tag3) => {
     let tag = []

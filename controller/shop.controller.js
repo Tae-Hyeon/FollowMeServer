@@ -1,15 +1,38 @@
 const env = process.env;
 const { Sequelize, sequelize, Op} = require('sequelize');
-const { User, Info, InfoLike, InfoReview, InfoTag } = require('../models');
+const { User, Info, InfoLike, InfoDip, InfoReview, InfoTag} = require('../models');
+
+const redis = require('redis');
+const client = redis.createClient(env.REDIS_PORT, env.REDIS_HOST);
 
 const jwt_util = require('../js/jwt_util');
 const crud_util = require('../js/crud_util');
+const info_dip = require('../models/info_dip');
+
+//Shop Recommend List
+exports.getRecommend = (req, res, next) => {
+    client.get('recommend', function (err, reply) {
+        if(err){
+            console.log(err);
+            res.send("error "+err);
+            return;
+        }
+
+        let json = JSON.parse(reply);
+
+        res.json(json);
+    })
+}
+
 //Shop Info Create
 exports.createShop = (req, res, next) => {
 
     let { 
         category, shopname, address, menu, operating_time, 
-        letitude, longitude, tag1, tag2, tag3 
+        letitude, longitude, tag1, tag2, tag3,
+        main_photo,
+        photo1, photo2, photo3, photo4, photo5, 
+        photo6, photo7, photo8, photo9, photo10
     } = req.body;
 
     let token = jwt_util.getAccount(req.headers.authorization);
@@ -35,7 +58,18 @@ exports.createShop = (req, res, next) => {
                     operating_time: operating_time,
                     grade_avg: 0,
                     letitude: letitude,
-                    longitude: longitude
+                    longitude: longitude,
+                    main_photo: main_photo,
+                    photo1: photo1,
+                    photo2: photo2,
+                    photo3: photo3,
+                    photo4: photo4,
+                    photo5: photo5,
+                    photo6: photo6,
+                    photo7: photo7,
+                    photo8: photo8,
+                    photo9: photo9,
+                    photo10: photo10
                 })
                 
                 .then( info => {
@@ -126,11 +160,12 @@ exports.readShop = (req, res, next) => {
                 include: [
                     {
                         model: InfoTag,
+                        required: false,
                         where: { info_id : info_id }
                     }, 
                     {
                         model: InfoLike,
-                        required: false, // lett outer join
+                        required: false, // left outer join
                         where: { user_id : user.id, info_id : info_id }
                     }
                 ],
@@ -139,7 +174,6 @@ exports.readShop = (req, res, next) => {
         })
 
         .then( info => {
-
             let tag1 = (info.info_tags[0] == null) ? null : info.info_tags[0].tag_id;
             let tag2 = (info.info_tags[1] == null) ? null : info.info_tags[1].tag_id;
             let tag3 = (info.info_tags[2] == null) ? null : info.info_tags[2].tag_id;
@@ -162,7 +196,18 @@ exports.readShop = (req, res, next) => {
                 like: like,
                 tag1: tag1,
                 tag2: tag2,
-                tag3: tag3
+                tag3: tag3,
+                main_photo: info.main_photo,
+                photo1: info.photo1,
+                photo2: info.photo2,
+                photo3: info.photo3,
+                photo4: info.photo4,
+                photo5: info.photo5,
+                photo6: info.photo6,
+                photo7: info.photo7,
+                photo8: info.photo8,
+                photo9: info.photo9,
+                photo10: info.photo10
             });
         });
     }
@@ -181,47 +226,49 @@ exports.readShop = (req, res, next) => {
 exports.readShopList = (req, res, next) => {
     let { category, tag } = req.query;
     let token = jwt_util.getAccount(req.headers.authorization);
-    //console.log(category, tag, token);
+
+    let category_json = (category) ? {'category': category} : {};
+    let tag_json = (tag) ? {'tag_id': tag} : {};
 
     if( typeof token !== 'undefined')
     {
 
         Info.findAll({
-            attribute: { 
+            attributes: { 
                 exclude : ['createdAt', 'updatedAt', 'deletedAt'] 
             },
             include: [
                 {
-                    attribute: {
+                    attributes: {
                         include : ['tag_id'],
                         exclude : ['created_at', 'updated_at', 'deleted_at']
                     },
                     model: InfoTag,
-                    where: { tag_id: tag }
+                    required: false,
+                    where: tag_json
                 }
             ],
 
-            where: { category: category }
+            where: category_json
         })
 
-        .then( info => {
-            let shopnum = Object.keys(info).length;
-            let shops = [];
-            let json = {};
+        .then( infos => {
+            let shopnum = Object.keys(infos).length;
+            let getShopJson = async function (infos) {
+                let shops = [];
+                for( i = 0; i < shopnum; i++ )
+                {
+                    let json = await crud_util.getShopData(infos[i]);
+                    shops.push(json);
+                }
 
-            for(key in info)
-            {
-                json.id = info[key].id;
-                json.shopname = info[key].shopname;
-                json.address = info[key].address;
-                json.grade_avg = info[key].grade_avg;
-                shops.push(json);
+                res.json({
+                    shopnum: shopnum,
+                    shops: shops
+                });
             }
 
-            res.json({
-                shopnum: shopnum,
-                shops: shops
-            });
+            let shops = getShopJson(infos);
         })
         
     }
@@ -241,7 +288,10 @@ exports.updateShop = (req, res, next) => {
     let info_id = req.body.id;
     let { 
         category, shopname, address, menu, operating_time, 
-        letitude, longitude, tag1, tag2, tag3 
+        letitude, longitude, tag1, tag2, tag3,
+        main_photo,
+        photo1, photo2, photo3, photo4, photo5, 
+        photo6, photo7, photo8, photo9, photo10
     } = req.body;
     let token = jwt_util.getAccount(req.headers.authorization);
     let tags, parameter_set, infotag_id, query;
@@ -276,7 +326,18 @@ exports.updateShop = (req, res, next) => {
                             menu: menu,
                             operating_time: operating_time,
                             letitude: letitude,
-                            longitude: longitude
+                            longitude: longitude,
+                            main_photo: main_photo,
+                            photo1: photo1,
+                            photo2: photo2,
+                            photo3: photo3,
+                            photo4: photo4,
+                            photo5: photo5,
+                            photo6: photo6,
+                            photo7: photo7,
+                            photo8: photo8,
+                            photo9: photo9,
+                            photo10: photo10
                         },
                         { 
                             where: { id: info_id } 
@@ -609,6 +670,60 @@ exports.dislikeShop = (req, res, next) => {
     }
 };
 
+//Shop Info Read - Dip List
+exports.readDipList = (req, res, next) => {
+    let token = jwt_util.getAccount(req.headers.authorization);
+
+    if( typeof token !== 'undefined')
+    {
+
+        Info.findAll({
+            attributes: { 
+                exclude : ['createdAt', 'updatedAt', 'deletedAt'] 
+            },
+            include: [
+                {
+                    attribute:  {
+
+                    },
+                    model: InfoDip,
+                    required: true,
+                    where: {user_id: token.user_id}
+                }
+            ]
+        })
+
+        .then( infos => {
+            let shopnum = Object.keys(infos).length;
+            let getShopJson = async function (infos) {
+                let shops = [];
+                for( i = 0; i < shopnum; i++ )
+                {
+                    let json = await crud_util.getShopData(infos[i]);
+                    shops.push(json);
+                }
+
+                res.json({
+                    shopnum: shopnum,
+                    shops: shops
+                });
+            }
+
+            let shops = getShopJson(infos);
+        })
+        
+    }
+    else
+    {
+
+        res.json({
+            code: 400,
+            message: "Can't read token (shop read list)"
+        });
+
+    }
+};
+
 exports.dipShop = (req, res, next) => {
     let info_id = req.body.id;
     let token = jwt_util.getAccount(req.headers.authorization);
@@ -825,6 +940,7 @@ exports.updateReview = (req, res, next) => {
     let review_id = req.body.id;
     let { grade, review } = req.body;
     let token = jwt_util.getAccount(req.headers.authorization);
+    let before_grade;
 
     if( typeof token !== 'undefined')
     {
@@ -842,6 +958,7 @@ exports.updateReview = (req, res, next) => {
             }
             else
             {
+                before_grade = info_review.grade;
                 return InfoReview.update(
                     {
                         grade: grade,
@@ -858,6 +975,16 @@ exports.updateReview = (req, res, next) => {
         })
 
         .then( inforeview => {
+
+            return Info.update(
+                { 
+                    grade_avg: Sequelize.literal('grade_avg + ' + ( grade - before_grade ) / 'reviewnum' )
+                },
+                { where : { id: info_id } }
+            );
+        })
+
+        .then( info => {
             res.json({
                 code: 200,
                 message: "update success (shop update review)"
@@ -876,7 +1003,7 @@ exports.updateReview = (req, res, next) => {
 
         res.json({
             code: 400,
-            message: "Can't read token (shop cancle like)"
+            message: "Can't read token (shop update review)"
         });
 
     }

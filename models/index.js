@@ -7,10 +7,13 @@ const basename = path.basename(__filename);
 const env = process.env.NODE_ENV || 'development';
 const config = require(__dirname + '/../config/config')[env];
 const db = {};
-
-const sequelize = new Sequelize(
-  config.database, config.username, config.password, config,
-);
+const sequelize = new Sequelize ({
+  hostname: config.hostname,
+  database: config.database,
+  username: config.username,
+  password: config.password,
+  dialect:  config.dialect
+});
 
 db.sequelize = sequelize;
 db.Sequelize = Sequelize;

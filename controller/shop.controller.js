@@ -7,7 +7,6 @@ const client = redis.createClient(env.REDIS_PORT, env.REDIS_HOST);
 
 const jwt_util = require('../js/jwt_util');
 const crud_util = require('../js/crud_util');
-const info_dip = require('../models/info_dip');
 
 //Shop Recommend List
 exports.getRecommend = (req, res, next) => {
@@ -745,7 +744,7 @@ exports.dipShop = (req, res, next) => {
                     reject(new Error('already dip'));
                 });
             }
-            return Infodip.create({
+            return InfoDip.create({
                 user_id: token.user_id,
                 info_id: info_id
             })
@@ -828,7 +827,7 @@ exports.undipShop = (req, res, next) => {
 
         res.json({
             code: 400,
-            message: "Can't read token (shop cancle like)"
+            message: "Can't read token (shop undip)"
         });
 
     }
@@ -880,7 +879,7 @@ exports.readReviews = (req, res, next) => {
 
         res.json({
             code: 400,
-            message: "Can't read token (shop cancle like)"
+            message: "Can't read token (shop read reviews)"
         });
 
     }

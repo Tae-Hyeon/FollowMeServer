@@ -134,7 +134,7 @@ exports.readCourse = (req, res, next) => {
 
         res.json({
             code: 400,
-            message: "Can't read token (shop read one)"
+            message: "Can't read token (course read one)"
         });
 
     }

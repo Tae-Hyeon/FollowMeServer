@@ -28,7 +28,7 @@ exports.createShop = (req, res, next) => {
 
     let { 
         category, shopname, address, menu, operating_time, 
-        letitude, longitude, tag1, tag2, tag3,
+        latitude, longitude, tag1, tag2, tag3,
         main_photo,
         photo1, photo2, photo3, photo4, photo5, 
         photo6, photo7, photo8, photo9, photo10
@@ -56,7 +56,7 @@ exports.createShop = (req, res, next) => {
                     menu: menu,
                     operating_time: operating_time,
                     grade_avg: 0,
-                    letitude: letitude,
+                    latitude: latitude,
                     longitude: longitude,
                     main_photo: main_photo,
                     photo1: photo1,
@@ -190,7 +190,7 @@ exports.readShop = (req, res, next) => {
                 menu: info.menu,
                 operating_time: info.operating_time,
                 grade_avg: info.grade_avg,
-                letitude: info.letitude,
+                latitude: info.latitude,
                 longitude: info.longitude,
                 like: like,
                 tag1: tag1,
@@ -287,7 +287,7 @@ exports.updateShop = (req, res, next) => {
     let info_id = req.body.id;
     let { 
         category, shopname, address, menu, operating_time, 
-        letitude, longitude, tag1, tag2, tag3,
+        latitude, longitude, tag1, tag2, tag3,
         main_photo,
         photo1, photo2, photo3, photo4, photo5, 
         photo6, photo7, photo8, photo9, photo10
@@ -324,7 +324,7 @@ exports.updateShop = (req, res, next) => {
                             address: address,
                             menu: menu,
                             operating_time: operating_time,
-                            letitude: letitude,
+                            latitude: latitude,
                             longitude: longitude,
                             main_photo: main_photo,
                             photo1: photo1,
@@ -392,7 +392,7 @@ exports.updateShop = (req, res, next) => {
                             address: info_backup.address,
                             menu: info_backup.menu,
                             operating_time: info_backup.operating_time,
-                            letitude: info_backup.letitude,
+                            latitude: info_backup.latitude,
                             longitude: info_backup.longitude
                         },
                         { 
@@ -669,8 +669,8 @@ exports.dislikeShop = (req, res, next) => {
     }
 };
 
-//Shop Info Read - Dip List
-exports.readDipList = (req, res, next) => {
+//Shop Info Read - Like List
+exports.readLikeList = (req, res, next) => {
     let token = jwt_util.getAccount(req.headers.authorization);
 
     if( typeof token !== 'undefined')
@@ -685,7 +685,7 @@ exports.readDipList = (req, res, next) => {
                     attribute:  {
 
                     },
-                    model: InfoDip,
+                    model: InfoLike,
                     required: true,
                     where: {user_id: token.user_id}
                 }
@@ -717,7 +717,7 @@ exports.readDipList = (req, res, next) => {
 
         res.json({
             code: 400,
-            message: "Can't read token (shop read list)"
+            message: "Can't read token (shop read like list)"
         });
 
     }

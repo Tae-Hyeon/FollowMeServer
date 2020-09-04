@@ -97,8 +97,6 @@ exports.readCourse = (req, res, next) => {
         })
 
         .then( courses => {
-            
-            console.log( courses );
 
             if( !courses[0].liked )
                 like = 0;
@@ -114,7 +112,6 @@ exports.readCourse = (req, res, next) => {
                 json.grade_avg = courses[i].info_grade_avg;
                 json.latitude = courses[i].latitude;
                 json.longitude = courses[i].longitude;
-                console.log(i," : ", json);
                 shops.push(json);
             }
 
@@ -225,7 +222,6 @@ exports.readCourseList = (req, res, next) => {
                         {
                             let index = await getShopsIndex(info_id_set, info_id_array[i][j]);
                             courses[i].shops.push(shops[index]);
-                            console.log(courses[i].shops);
                         }
                     }
                 }
@@ -279,7 +275,6 @@ exports.readMyCourse = (req, res, next) => {
 
         .then( course => {
 
-            console.log(course);
             for( i = 0; i < Object.keys(course).length; i++)
             {
                 //course data to response
@@ -346,7 +341,6 @@ exports.readMyCourse = (req, res, next) => {
                     {
                         let index = info_id_set.findIndex( val => val == info_id_array[i][j]);
                         courses[i].shops.push(shops[index]);
-                        console.log("index : ", index);
                     }
                 }
             }
@@ -464,8 +458,6 @@ exports.updateShare = (req, res, next) => {
     let { share, course_id, shared_user_id} = req.body;
     let token = jwt_util.getAccount(req.headers.authorization);
 
-    console.log(share, course_id, shared_user_id)
-    CourseShare
     if( typeof token !== 'undefined')
     {
         let user_id = token.user_id;
@@ -491,7 +483,7 @@ exports.updateShare = (req, res, next) => {
         )
 
         .then( course => {
-            console.log(course);
+            
             if( course )
             {
                 if(share == 0) // 비공개 전환
@@ -728,7 +720,7 @@ exports.likeCourse = (req, res, next) => {
         })
 
         .then( course_like => {
-            return course.increment(
+            return Course.increment(
                 { likenum: 1 },
                 { where : { id: course_id } }
             );
@@ -742,6 +734,7 @@ exports.likeCourse = (req, res, next) => {
         })
         
         .catch( err => {
+            console.log(err);
             res.json({
                 code: 500,
                 message: "create error (course like)"
@@ -795,7 +788,7 @@ exports.dislikeCourse = (req, res, next) => {
         })
 
         .then( course_like => {
-            return course.decrement(
+            return Course.decrement(
                 { likenum: 1 },
                 { where : { id: course_id } }
             );

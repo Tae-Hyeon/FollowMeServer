@@ -28,7 +28,7 @@ router.delete('/', CourseController.deleteCourse);
 router.post('/like', CourseController.likeCourse);
 
 //COURSE LIKE CANCLE
-router.delete('/dislike', CourseController.dislikeCourse);
+router.post('/dislike', CourseController.dislikeCourse);
 
 //COURSE READ REVIEW LIST
 router.get('/review/:id', CourseController.readReviews);

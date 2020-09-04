@@ -360,22 +360,22 @@ exports.updateShop = (req, res, next) => {
                     infotag_id = parameter_set[0];
                     tags = parameter_set[1];
                     query = parameter_set[2];
-                    console.log(parameter_set);
+                    
                     return crud_util.execCRUD(infotag_id[0], info_id, tags[0], query[0]);
                 })
 
                 .then( infotag1 => {
-                    console.log("result 0 : " +infotag1);
+                    //console.log("result 0 : " +infotag1);
                     return crud_util.execCRUD(infotag_id[1], info_id, tags[1], query[1]);
                 })
 
                 .then( infotag2 => {
-                    console.log("result 1 : " +infotag2);
+                    //console.log("result 1 : " +infotag2);
                     return crud_util.execCRUD(infotag_id[2], info_id, tags[2], query[2]);
                 })
 
                 .then( infotag3 => {
-                    console.log("result 2 : " +infotag3);
+                    //console.log("result 2 : " +infotag3);
                     res.json({
                         code: 200,
                         message:"Update Success"
@@ -609,6 +609,19 @@ exports.dislikeShop = (req, res, next) => {
 
     if( typeof token !== 'undefined')
     {
+
+        let info_json = {};
+
+        if( typeof info_id == "array")
+        {
+            info_json = {
+                [Op.or]: info_id
+            };
+        }
+        else
+        {
+            info_json = info_id;
+        }
         // 테스트로는 token의 user_id를 받아서 user를 따로 조회 안하도록 만듦 -> 나중에 수정 가능
         InfoLike.findOne({
             where : {
@@ -619,7 +632,6 @@ exports.dislikeShop = (req, res, next) => {
 
         .then( infolike => {
 
-            console.log(infolike);
             if( !infolike )
             {
                 return new Promise( (resolve, reject) => {
@@ -631,7 +643,7 @@ exports.dislikeShop = (req, res, next) => {
                 return InfoLike.destroy({
                     where : {
                         user_id: token.user_id,
-                        info_id: info_id
+                        info_id: info_json
                     }
                 });
             }

@@ -2,26 +2,8 @@ const env = process.env;
 const { Sequelize, sequelize, Op} = require('sequelize');
 const { User, Info, InfoLike, InfoDip, InfoReview, InfoTag} = require('../models');
 
-const redis = require('redis');
-const client = redis.createClient(env.REDIS_PORT, env.REDIS_HOST);
-
 const jwt_util = require('../js/jwt_util');
 const crud_util = require('../js/crud_util');
-
-//Shop Recommend List
-exports.getRecommend = (req, res, next) => {
-    client.get('recommend', function (err, reply) {
-        if(err){
-            console.log(err);
-            res.send("error "+err);
-            return;
-        }
-
-        let json = JSON.parse(reply);
-
-        res.json(json);
-    })
-}
 
 //Shop Info Create
 exports.createShop = (req, res, next) => {
@@ -365,17 +347,14 @@ exports.updateShop = (req, res, next) => {
                 })
 
                 .then( infotag1 => {
-                    //console.log("result 0 : " +infotag1);
                     return crud_util.execCRUD(infotag_id[1], info_id, tags[1], query[1]);
                 })
 
                 .then( infotag2 => {
-                    //console.log("result 1 : " +infotag2);
                     return crud_util.execCRUD(infotag_id[2], info_id, tags[2], query[2]);
                 })
 
                 .then( infotag3 => {
-                    //console.log("result 2 : " +infotag3);
                     res.json({
                         code: 200,
                         message:"Update Success"
@@ -586,6 +565,7 @@ exports.likeShop = (req, res, next) => {
         })
         
         .catch( err => {
+            console.log(err);
             res.json({
                 code: 500,
                 message: "create error (shop like)"
@@ -609,24 +589,17 @@ exports.dislikeShop = (req, res, next) => {
 
     if( typeof token !== 'undefined')
     {
-
+        console.log(info_id, typeof info_id, info_id.split(','));
         let info_json = {};
-
-        if( typeof info_id == "array")
-        {
-            info_json = {
-                [Op.or]: info_id
-            };
-        }
-        else
-        {
-            info_json = info_id;
-        }
+        let info_array = info_id.split(',');
+    
         // 테스트로는 token의 user_id를 받아서 user를 따로 조회 안하도록 만듦 -> 나중에 수정 가능
-        InfoLike.findOne({
+        InfoLike.findAll({
             where : {
                 user_id: token.user_id,
-                info_id: info_id
+                info_id: {
+                    [Op.or] : info_array
+                }
             }
         })
 
@@ -643,7 +616,7 @@ exports.dislikeShop = (req, res, next) => {
                 return InfoLike.destroy({
                     where : {
                         user_id: token.user_id,
-                        info_id: info_json
+                        info_id: info_array
                     }
                 });
             }
@@ -652,7 +625,7 @@ exports.dislikeShop = (req, res, next) => {
         .then( infolike => {
             return Info.decrement(
                 { likenum: 1 },
-                { where : { id: info_id } }
+                { where : { id: { [Op.or] : info_array } } }
             );
         })
 
@@ -664,6 +637,7 @@ exports.dislikeShop = (req, res, next) => {
         })
         
         .catch( err => {
+            console.log(err);
             res.json({
                 code: 500,
                 message: "no data in db already (shop cancle like)"
@@ -735,116 +709,6 @@ exports.readLikeList = (req, res, next) => {
     }
 };
 
-exports.dipShop = (req, res, next) => {
-    let info_id = req.body.id;
-    let token = jwt_util.getAccount(req.headers.authorization);
-
-    if( typeof token !== 'undefined')
-    {
-        // 테스트로는 token의 user_id를 받아서 user를 따로 조회 안하도록 만듦 -> 나중에 수정 가능
-        InfoDip.findOne({
-            where : {
-                user_id: token.user_id,
-                info_id: info_id
-            }
-        })
-        .then( infodip => {
-            if( infodip )
-            {
-                //이미 찜되어 있으면 reject
-                return new Promise( (resolve, reject) => {
-                    reject(new Error('already dip'));
-                });
-            }
-            return InfoDip.create({
-                user_id: token.user_id,
-                info_id: info_id
-            })
-        })
-
-        .then( result =>{
-            res.json({
-              code: 200,
-              message: "create success (shop dip)"
-            });
-        })
-        
-        .catch( err => {
-            res.json({
-                code: 500,
-                message: "create error (shop dip)"
-            });
-        });
-    }
-    else
-    {
-
-        res.json({
-            code: 400,
-            message: "Can't read token (shop dip)"
-        });
-
-    }
-};
-
-exports.undipShop = (req, res, next) => {
-    let info_id = req.body.id;
-    let token = jwt_util.getAccount(req.headers.authorization);
-
-    if( typeof token !== 'undefined')
-    {
-        // 테스트로는 token의 user_id를 받아서 user를 따로 조회 안하도록 만듦 -> 나중에 수정 가능
-        InfoDip.findOne({
-            where : {
-                user_id: token.user_id,
-                info_id: info_id
-            }
-        })
-
-        .then( infodip => {
-
-            if( !infodip )
-            {
-                return new Promise( (resolve, reject) => {
-                    reject(new Error('no data'));
-                });
-            }
-            else
-            {
-                return InfoDip.destroy({
-                    where : {
-                        user_id: token.user_id,
-                        info_id: info_id
-                    }
-                });
-            }
-        })
-
-        .then( result =>{
-            res.json({
-              code: 200,
-              message: "delete success (shop undip)"
-            });
-        })
-        
-        .catch( err => {
-            res.json({
-                code: 500,
-                message: "Can't delete : no data in db already (shop undip)"
-            });
-        });
-    }
-    else
-    {
-
-        res.json({
-            code: 400,
-            message: "Can't read token (shop undip)"
-        });
-
-    }
-};
-
 exports.readReviews = (req, res, next) => {
     let info_id = req.body.id;
     let token = jwt_util.getAccount(req.headers.authorization);
@@ -880,6 +744,7 @@ exports.readReviews = (req, res, next) => {
         })
         
         .catch( err => {
+            console.log(err);
             res.json({
                 code: 500,
                 message: "read error (shop read reviews)"
@@ -1003,6 +868,7 @@ exports.updateReview = (req, res, next) => {
         })
         
         .catch( err => {
+            console.log(err);
             res.json({
                 code: 500,
                 message: "update error (shop update review)"
@@ -1059,6 +925,7 @@ exports.deleteReview = (req, res, next) => {
         })
         
         .catch( err => {
+            console.log(err);
             res.json({
                 code: 500,
                 message: "delete error (shop review delete)"

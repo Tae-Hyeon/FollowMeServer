@@ -30,12 +30,6 @@ router.post('/like', CourseController.likeCourse);
 //COURSE LIKE CANCLE
 router.delete('/dislike', CourseController.dislikeCourse);
 
-//COURSE DIP
-router.post('/dip', CourseController.dipCourse);
-
-//COURSE DIP CANCLE
-router.delete('/dip', CourseController.undipCourse);
-
 //COURSE READ REVIEW LIST
 router.get('/review/:id', CourseController.readReviews);
 

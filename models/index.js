@@ -23,7 +23,6 @@ db.User = require('./user')(sequelize, Sequelize);
 db.Info = require('./info')(sequelize, Sequelize);
 
 db.Course = require('./course')(sequelize, Sequelize);
-db.CourseDip = require('./course_dip')(sequelize, Sequelize);
 db.CourseLike = require('./course_like')(sequelize, Sequelize);
 db.CourseReview = require('./course_review')(sequelize, Sequelize);
 db.CourseShare = require('./course_share')(sequelize, Sequelize);
@@ -42,12 +41,6 @@ db.Info.hasMany(db.Course, { foreignKey: 'course_info2', sourceKey: 'id'});
 db.Course.belongsTo(db.Info, { foreignKey: 'course_info2', sourceKey: 'id'});
 db.Info.hasMany(db.Course, { foreignKey: 'course_info3', sourceKey: 'id'});
 db.Course.belongsTo(db.Info, { foreignKey: 'course_info3', sourceKey: 'id'});
-
-//CourseLike fk - User, Course {id}     N:M
-db.User.hasMany(db.CourseDip, { foreignKey: 'user_id', sourceKey: 'id'});
-db.Course.hasMany(db.CourseDip, { foreignKey: 'course_id', sourceKey: 'id'});
-db.User.belongsToMany(db.Course, { through: 'course_like', foreignKey: 'user_id', sourceKey: 'id'});
-db.Course.belongsToMany(db.User, { through: 'course_like', foreignKey: 'course_id', sourceKey: 'id'});
 
 //CourseLike fk - User, Course {id}     N:M
 db.User.hasMany(db.CourseLike, { foreignKey: 'user_id', sourceKey: 'id'});

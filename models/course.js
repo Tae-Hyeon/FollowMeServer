@@ -32,6 +32,12 @@ module.exports = (sequelize, DataTypes) => {
             allowNULL: false
         },
 
+        main_photo: {
+            type: DataTypes.STRING(100),
+            defaultValue: process.env.IMAGE_DB_PATH + process.env.DEFAULT_IMAGE_NAME,
+            allowNULL: false
+        },
+
         course_info1: {
             type: DataTypes.INTEGER,
             allowNULL: true

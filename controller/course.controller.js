@@ -203,6 +203,40 @@ exports.readCourseList = (req, res, next) => {
                 type: QueryTypes.SELECT
             }
         )
+        
+        .then( courses => {
+            
+            return new Promise( resolve => {
+                let course_array = courses;
+                for(let i = 0; i <= course_array.length; i++)
+                {
+                    if( i == course_array.length )
+                    {
+                        resolve(course_array);
+                    }
+                    course_array[i].shops = [
+                        {
+                            shop_id: course_array[i].shop_id1,
+                            shopname: course_array[i].shopname1
+                        },
+                        {
+                            shop_id: course_array[i].shop_id2,
+                            shopname: course_array[i].shopname2
+                        },
+                        {
+                            shop_id: course_array[i].shop_id3,
+                            shopname: course_array[i].shopname3
+                        }
+                    ];
+                    delete course_array[i].shop_id1;
+                    delete course_array[i].shopname1;
+                    delete course_array[i].shop_id2;
+                    delete course_array[i].shopname2;
+                    delete course_array[i].shop_id3;
+                    delete course_array[i].shopname3;
+                }
+            })
+        })
 
         .then( courses => {
             res.json({
@@ -250,7 +284,40 @@ exports.readMyCourse = (req, res, next) => {
         )
 
         .then( courses => {
+            
+            return new Promise( resolve => {
+                let course_array = courses;
+                for(let i = 0; i <= course_array.length; i++)
+                {
+                    if( i == course_array.length )
+                    {
+                        resolve(course_array);
+                    }
+                    course_array[i].shops = [
+                        {
+                            shop_id: course_array[i].shop_id1,
+                            shopname: course_array[i].shopname1
+                        },
+                        {
+                            shop_id: course_array[i].shop_id2,
+                            shopname: course_array[i].shopname2
+                        },
+                        {
+                            shop_id: course_array[i].shop_id3,
+                            shopname: course_array[i].shopname3
+                        }
+                    ];
+                    delete course_array[i].shop_id1;
+                    delete course_array[i].shopname1;
+                    delete course_array[i].shop_id2;
+                    delete course_array[i].shopname2;
+                    delete course_array[i].shop_id3;
+                    delete course_array[i].shopname3;
+                }
+            })
+        })
 
+        .then( courses => {
             res.json({
                 courses: courses
             });

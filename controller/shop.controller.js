@@ -22,7 +22,7 @@ exports.createShop = (req, res, next) => {
     } = req.body;
 
     let files = req.files;
-    
+
     let token = jwt_util.getAccount(req.headers.authorization);
 
     if( typeof token !== 'undefined')
@@ -47,17 +47,17 @@ exports.createShop = (req, res, next) => {
                     grade_avg: 0,
                     latitude: latitude,
                     longitude: longitude,
-                    main_photo: main_photo,
-                    photo1: photo1,
-                    photo2: photo2,
-                    photo3: photo3,
-                    photo4: photo4,
-                    photo5: photo5,
-                    photo6: photo6,
-                    photo7: photo7,
-                    photo8: photo8,
-                    photo9: photo9,
-                    photo10: photo10
+                    // main_photo: main_photo,
+                    // photo1: photo1,
+                    // photo2: photo2,
+                    // photo3: photo3,
+                    // photo4: photo4,
+                    // photo5: photo5,
+                    // photo6: photo6,
+                    // photo7: photo7,
+                    // photo8: photo8,
+                    // photo9: photo9,
+                    // photo10: photo10
                 })
                 
                 .then( info => {
@@ -108,10 +108,10 @@ exports.createShop = (req, res, next) => {
         })
         
         .catch( err => {
+            console.log(err);
             res.json({
                 code: 500,
                 message: "user select error (shop create)",
-                error: err
             });
         });
     }
@@ -471,14 +471,14 @@ exports.deleteShop = (req, res, next) => {
                 })
 
                 .then( info => {
-                    console.log(info);
                     res.json({
                         code: 200,
                         message: "Delete Success"
                     });
                 })
                 
-                .catch( error => {
+                .catch( err => {
+                    console.log(err);
                     res.json({
                         code: 500,
                         message: "delete error (shop delete)"
@@ -497,10 +497,10 @@ exports.deleteShop = (req, res, next) => {
         })
 
         .catch( err => {
+            console.log(err);
             res.json({
                 code: 500,
                 message: "user select error (shop delete)",
-                error: err
             });
         });
     }
@@ -582,7 +582,6 @@ exports.dislikeShop = (req, res, next) => {
 
     if( typeof token !== 'undefined')
     {
-        console.log(info_id, typeof info_id, info_id.split(','));
         let info_json = {};
         let info_array = info_id.split(',');
     
@@ -650,6 +649,7 @@ exports.dislikeShop = (req, res, next) => {
 
 //Shop Info Read - Like List
 exports.readLikeList = (req, res, next) => {
+    let info_id = req.query.id;
     let token = jwt_util.getAccount(req.headers.authorization);
 
     if( typeof token !== 'undefined')
@@ -668,10 +668,12 @@ exports.readLikeList = (req, res, next) => {
                     required: true,
                     where: {user_id: token.user_id}
                 }
-            ]
+            ],
+            where: {id: info_id}
         })
 
         .then( infos => {
+            console.log(infos);
             let shopnum = Object.keys(infos).length;
             let getShopJson = async function (infos) {
                 let shops = [];

@@ -13,11 +13,11 @@ const upload = multer({
             cb(null, shop_id + process.env.IMAGE_MIDDLE_PATH + file.originalname);
         },
     }),
-    limits: { files: 10, fileSize: 1024 * 1024 * 1024, }
+    limits: { fileSize: 1024 * 1024 * 1024, }
 });
 
 //SHOP INFO CREATE
-router.post('/', upload.single('photo'), ShopController.createShop);
+router.post('/', upload.array('photo'), ShopController.createShop);
 
 //SHOP LIST READ
 router.get('/list', ShopController.readShopList);

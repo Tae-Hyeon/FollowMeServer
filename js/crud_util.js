@@ -9,6 +9,7 @@ exports.getShopData = (info) => {
         json.shopname = info.shopname;
         json.address = info.address;
         json.grade_avg = info.grade_avg;
+        json.main_photo = 'null';
 
         if(info.main_photo)
         {

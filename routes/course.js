@@ -44,7 +44,7 @@ router.post('/like', CourseController.likeCourse);
 router.post('/dislike', CourseController.dislikeCourse);
 
 //COURSE READ REVIEW LIST
-router.get('/review/:id', CourseController.readReviews);
+router.get('/review', CourseController.readReviews);
 
 //COURSE CREATE REVIEW
 router.post('/review', CourseController.createReview);

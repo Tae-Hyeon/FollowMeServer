@@ -820,35 +820,56 @@ exports.dislikeCourse = (req, res, next) => {
 
 //COURSE READ REVIEW LIST
 exports.readReviews = (req, res, next) => {
-    let course_id = req.body.id;
+    let course_id = req.query.id;
     let token = jwt_util.getAccount(req.headers.authorization);
 
     if( typeof token != 'undefined')
     {
-        CourseReview.findAll({
-            // where : {
-                
-            // }
-        })
-
+        let query = `
+        SELECT 
+            course_reviews.id, course_reviews.grade, course_reviews.contents,
+            users.nickname
+        FROM course_reviews
+        LEFT OUTER JOIN (users)
+        ON (course_reviews.user_id = users.id)
+        WHERE (course_reviews.course_id = :course_id)
+        `
+        model.sequelize.query(
+            query,
+            {
+                replacements: {
+                    'course_id': course_id
+                },
+                type: QueryTypes.SELECT
+            }
+        )
         .then( course_reviews => {
 
             let reviewnum = Object.keys(course_reviews).length;
-            let reviews = [];
-            let json = {};
-
-            for(key in course)
-            {
-                json.id = course_reviews[key].id;
-                json.grade = course_reviews[key].grade;
-                json.nickname = course_reviews[key].nickname;
-                json.review = course_reviews[key].contents;
-                reviews.push(json);
-            }
-
-            res.json({
-                reviewnum: reviewnum,
-                reveiws : reviews
+            console.log(course_reviews);
+            return new Promise( resolve => {
+                let review_array = course_reviews;
+                let reviews = [];
+                let json = {};
+                for(let i = 0; i <= review_array.length; i++)
+                {
+                    if( i == review_array.length )
+                    {
+                        console.log(reviews);
+                        resolve(reviews);
+                    }
+                    json.id = review_array[i].id;
+                    json.grade = review_array[i].grade;
+                    json.nickname = review_array[i].nickname;
+                    json.review = review_array[i].contents;
+                    reviews.push(json);
+                }
+            })
+            .then( reviews => {
+                res.json({
+                    reviewnum: reviewnum,
+                    reveiws : reviews
+                })
             })
             
         })
@@ -932,7 +953,7 @@ exports.updateReview = (req, res, next) => {
 
     if( typeof token != 'undefined')
     {
-        courseReview.findOne({
+        CourseReview.findOne({
             where : { id: review_id }
         })
 
@@ -998,11 +1019,9 @@ exports.deleteReview = (req, res, next) => {
 
     if( typeof token != 'undefined')
     {
-        CourseReview.destroy({
-            where : {
-                user_id: token.user_id,
-                course_id: course_id
-            }
+        
+        CourseReview.findOne({
+            where : { id: review_id }
         })
 
         .then( course_review => {
@@ -1016,10 +1035,20 @@ exports.deleteReview = (req, res, next) => {
             }
             else
             {
-                return Course.decrement(
-                    { reviewnum: 1 },
-                    { where : { id: course_id } }
-                );
+                return CourseReview.destroy({
+                    where : {
+                        user_id: token.user_id,
+                        course_id: course_id
+                    }
+                }).then( next => {
+                    return Course.update(
+                        { 
+                            grade_avg: Sequelize.literal('((grade_avg * reviewnum) - ' + grade + ') / (reviewnum - 1)' ),
+                            reviewnum: Sequelize.literal('reviewnum - 1')
+                        },
+                        { where : { id: course_id } }
+                    );
+                })
             }
         })
 

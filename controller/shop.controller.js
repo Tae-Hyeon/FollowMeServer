@@ -1,6 +1,7 @@
 const env = process.env;
-const { Sequelize, sequelize, Op} = require('sequelize');
+const { Sequelize, sequelize, Op, QueryTypes} = require('sequelize');
 const { User, Info, InfoLike, InfoReview, InfoTag} = require('../models');
+const model = require('../models');
 
 const jwt_util = require('../js/jwt_util');
 const crud_util = require('../js/crud_util');
@@ -702,35 +703,51 @@ exports.readLikeList = (req, res, next) => {
 };
 
 exports.readReviews = (req, res, next) => {
-    let shop_id = req.query.shop_id;
+    let shop_id = req.query.id;
     let token = jwt_util.getAccount(req.headers.authorization);
 
     if( typeof token !== 'undefined')
     {
-        InfoReview.findAll({
-            where: {
-                info_id: shop_id,
+        let query = `
+        SELECT 
+            info_reviews.id, info_reviews.grade, info_reviews.contents,
+            users.nickname
+        FROM info_reviews
+        LEFT OUTER JOIN (users)
+        ON (info_reviews.user_id = users.id)
+        WHERE (info_reviews.info_id = :info_id)
+        `
+        model.sequelize.query(
+            query,
+            {
+                replacements: {
+                    'info_id': shop_id
+                },
+                type: QueryTypes.SELECT
             }
-        })
+        )
 
-        .then( inforeviews => {
+        .then( info_reviews => {
 
-            let reviewnum = Object.keys(inforeviews).length;
-            let reviews = [];
-            let json = {};
-
+            let reviewnum = Object.keys(info_reviews).length;
             return new Promise( resolve => {
-                for(key in inforeviews)
+                let review_array = info_reviews;
+                let reviews = [];
+                for(let i = 0; i <= review_array.length; i++)
                 {
-                    json.id = inforeviews[key].id;
-                    json.grade = inforeviews[key].grade;
-                    json.nickname = inforeviews[key].nickname;
-                    json.review = inforeviews[key].contents;
+                    if( i == review_array.length )
+                    {
+                        resolve(reviews);
+                    }
+                    let json = {};
+                    json.id = review_array[i].id;
+                    json.grade = review_array[i].grade;
+                    json.nickname = review_array[i].nickname;
+                    json.review = review_array[i].contents;
                     reviews.push(json);
                 }
             })
-            
-            .then( next => {
+            .then( reviews => {
                 res.json({
                     reviewnum: reviewnum,
                     reveiws : reviews

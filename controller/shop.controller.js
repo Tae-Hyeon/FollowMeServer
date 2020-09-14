@@ -1,9 +1,15 @@
 const env = process.env;
 const { Sequelize, sequelize, Op} = require('sequelize');
-const { User, Info, InfoLike, InfoDip, InfoReview, InfoTag} = require('../models');
+const { User, Info, InfoLike, InfoReview, InfoTag} = require('../models');
 
 const jwt_util = require('../js/jwt_util');
 const crud_util = require('../js/crud_util');
+
+const fs = require('fs');
+const image_path = env.IMAGE_PATH;
+const image_db_path = env.IMAGE_DB_PATH;
+const image_middle_path = env.IMAGE_MIDDLE_PATH;
+const default_image_name = env.DEFAULT_IMAGE_NAME;
 
 //Shop Info Create
 exports.createShop = (req, res, next) => {
@@ -11,11 +17,11 @@ exports.createShop = (req, res, next) => {
     let { 
         category, shopname, address, menu, operating_time, 
         latitude, longitude, tag1, tag2, tag3,
-        main_photo,
-        photo1, photo2, photo3, photo4, photo5, 
-        photo6, photo7, photo8, photo9, photo10
+        main_photo
     } = req.body;
 
+    let files = req.files;
+    
     let token = jwt_util.getAccount(req.headers.authorization);
 
     if( typeof token !== 'undefined')
@@ -70,10 +76,6 @@ exports.createShop = (req, res, next) => {
                             
 
                         InfoTag.bulkCreate(infotags)
-                        
-                        // .then( () => {
-                        //     return InfoTag.findAll();
-                        // })
 
                         .then( () => { 
                             res.json({
@@ -179,16 +181,18 @@ exports.readShop = (req, res, next) => {
                 tag2: tag2,
                 tag3: tag3,
                 main_photo: info.main_photo,
-                photo1: info.photo1,
-                photo2: info.photo2,
-                photo3: info.photo3,
-                photo4: info.photo4,
-                photo5: info.photo5,
-                photo6: info.photo6,
-                photo7: info.photo7,
-                photo8: info.photo8,
-                photo9: info.photo9,
-                photo10: info.photo10
+                photos: [
+                    info.photo1,
+                    info.photo2,
+                    info.photo3,
+                    info.photo4,
+                    info.photo5,
+                    info.photo6,
+                    info.photo7,
+                    info.photo8,
+                    info.photo9,
+                    info.photo10
+                ]
             });
         });
     }
@@ -269,11 +273,9 @@ exports.updateShop = (req, res, next) => {
     let info_id = req.body.id;
     let { 
         category, shopname, address, menu, operating_time, 
-        latitude, longitude, tag1, tag2, tag3,
-        main_photo,
-        photo1, photo2, photo3, photo4, photo5, 
-        photo6, photo7, photo8, photo9, photo10
+        latitude, longitude, tag1, tag2, tag3, main_photo
     } = req.body;
+
     let token = jwt_util.getAccount(req.headers.authorization);
     let tags, parameter_set, infotag_id, query;
     let info_backup;
@@ -308,17 +310,7 @@ exports.updateShop = (req, res, next) => {
                             operating_time: operating_time,
                             latitude: latitude,
                             longitude: longitude,
-                            main_photo: main_photo,
-                            photo1: photo1,
-                            photo2: photo2,
-                            photo3: photo3,
-                            photo4: photo4,
-                            photo5: photo5,
-                            photo6: photo6,
-                            photo7: photo7,
-                            photo8: photo8,
-                            photo9: photo9,
-                            photo10: photo10
+                            main_photo: main_photo
                         },
                         { 
                             where: { id: info_id } 
@@ -710,15 +702,15 @@ exports.readLikeList = (req, res, next) => {
 };
 
 exports.readReviews = (req, res, next) => {
-    let info_id = req.body.id;
+    let shop_id = req.query.shop_id;
     let token = jwt_util.getAccount(req.headers.authorization);
 
     if( typeof token !== 'undefined')
     {
         InfoReview.findAll({
-            // where : {
-                
-            // }
+            where: {
+                info_id: shop_id,
+            }
         })
 
         .then( inforeviews => {
@@ -727,20 +719,23 @@ exports.readReviews = (req, res, next) => {
             let reviews = [];
             let json = {};
 
-            for(key in info)
-            {
-                json.id = inforeviews[key].id;
-                json.grade = inforeviews[key].grade;
-                json.nickname = inforeviews[key].nickname;
-                json.review = inforeviews[key].contents;
-                reviews.push(json);
-            }
-
-            res.json({
-                reviewnum: reviewnum,
-                reveiws : reviews
+            return new Promise( resolve => {
+                for(key in inforeviews)
+                {
+                    json.id = inforeviews[key].id;
+                    json.grade = inforeviews[key].grade;
+                    json.nickname = inforeviews[key].nickname;
+                    json.review = inforeviews[key].contents;
+                    reviews.push(json);
+                }
             })
             
+            .then( next => {
+                res.json({
+                    reviewnum: reviewnum,
+                    reveiws : reviews
+                })
+            })
         })
         
         .catch( err => {
@@ -763,13 +758,13 @@ exports.readReviews = (req, res, next) => {
 };
 
 exports.createReview = (req, res, next) => {
-    let { info_id, grade, review } = req.body;
+    let { shop_id, grade, review } = req.body;
     let token = jwt_util.getAccount(req.headers.authorization);
 
     if( typeof token !== 'undefined')
     {
         InfoReview.create({
-                info_id: info_id,
+                info_id: shop_id,
                 user_id: token.user_id,
                 grade: grade,
                 contents: review
@@ -824,9 +819,9 @@ exports.updateReview = (req, res, next) => {
             where : { id: review_id }
         })
 
-        .then( inforeview => {
+        .then( info_review => {
 
-            if( !inforeview )
+            if( !info_review )
             {
                 return new Promise( (resolve, reject) => {
                     reject(new Error('no data to update'));
@@ -850,7 +845,7 @@ exports.updateReview = (req, res, next) => {
             }
         })
 
-        .then( inforeview => {
+        .then( info_review => {
 
             return Info.update(
                 { 
@@ -892,28 +887,38 @@ exports.deleteReview = (req, res, next) => {
 
     if( typeof token !== 'undefined')
     {
-        InfoReview.destroy({
+        InfoReview.findOne({
             where : {
                 user_id: token.user_id,
                 info_id: info_id
             }
         })
 
-        .then( inforeview => {
+        .then( info_review => {
 
-            // review 없을 시 reject
-            if( !inforeview )
+            if( !info_review )
             {
                 return new Promise( (resolve, reject) => {
-                    reject(new Error('no data to delete'));
+                    reject(new Error('no data to update'));
                 });
             }
             else
             {
-                return Info.decrement(
-                    { reviewnum: 1 },
-                    { where : { id: info_id } }
-                );
+                before_grade = info_review.grade;
+                return InfoReview.destroy({
+                    where : {
+                        user_id: token.user_id,
+                        info_id: info_id
+                    }
+                }). then( next => {
+                    Info.update(
+                        { 
+                            grade_avg: Sequelize.literal('((grade_avg * reviewnum) - ' + grade + ') / (reviewnum - 1)' ),
+                            reviewnum: Sequelize.literal('reviewnum - 1')
+                        },
+                        { where : { id: info_id } }
+                    );
+                });
             }
         })
 

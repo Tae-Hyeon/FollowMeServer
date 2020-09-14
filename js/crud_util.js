@@ -13,7 +13,7 @@ exports.getShopData = (info) => {
         if(info.main_photo)
         {
             let photo_num = "photo" + info.main_photo;
-            json.photo = info[photo_num];
+            json.main_photo = info[photo_num];
         }
 
         resolve(json);

@@ -2,20 +2,25 @@ const express = require('express');
 const router = express.Router();
 const ShopController = require('../controller/shop.controller');
 
-const env = process.env;
-const { Sequelize, sequelize, Op} = require('sequelize');
-const { Info, InfoLike } = require('../models');
-
-const jwt_util = require('../js/jwt_util');
+const multer = require('multer');
+const upload = multer({
+    storage: multer.diskStorage({
+        destination: function (req, file, cb) {
+            cb(null, process.env.IMAGE_PATH );
+        },
+        filename: function (req, file, cb) {
+            let shop_id = (req.body.id) ? req.body.id : "default";
+            cb(null, shop_id + process.env.IMAGE_MIDDLE_PATH + file.originalname);
+        },
+    }),
+    limits: { files: 10, fileSize: 1024 * 1024 * 1024, }
+});
 
 //SHOP INFO CREATE
-router.post('/', ShopController.createShop);
+router.post('/', upload.single('photo'), ShopController.createShop);
 
 //SHOP LIST READ
 router.get('/list', ShopController.readShopList);
-
-// //SHOP RECOMMEND LIST READ
-// router.get('/recommend', ShopController.getRecommend);
 
 //SHOP INFO READ
 router.get('/one', ShopController.readShop);
@@ -33,7 +38,7 @@ router.post('/like', ShopController.likeShop);
 router.post('/dislike', ShopController.dislikeShop); 
 
 //좋아요 리스트
-router.get('/dip', ShopController.readLikeList);
+router.get('/like', ShopController.readLikeList);
 
 //SHOP REVIEW CREATE
 router.post('/review', ShopController.createReview);

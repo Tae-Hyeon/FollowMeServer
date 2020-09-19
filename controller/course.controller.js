@@ -1,79 +1,52 @@
 const env = process.env;
-const { Sequelize, sequelize, Op, QueryTypes} = require('sequelize');
+const { Sequelize, QueryTypes} = require('sequelize');
 const { User, Course, CourseLike, CourseReview, CourseShare, Info } = require('../models');
 const model = require('../models');
 const jwt_util = require('../js/jwt_util');
-const fs = require('fs');
-const image_path = env.IMAGE_PATH;
 const image_db_path = env.IMAGE_DB_PATH;
-const image_middle_path = env.IMAGE_MIDDLE_PATH;
-const default_image_name = env.DEFAULT_IMAGE_NAME;
 
 //COURSE CREATE
 exports.createCourse = (req, res, next) => {
 
-    let { category, title, contents, dday } = req.body;
-    let token = jwt_util.getAccount(req.headers.authorization);
-    let file = req.file;
+    let { thema, title, dday, shops } = req.body;
+    let token = jwt_util.getAccount(req.headers.authorization);     
+    let course_json = {}, bf= JSON.parse(shops);
 
-    if(!category) 
-        category = 1;
+    if(!thema) 
+        thema = 1;
     if( typeof token != 'undefined')
     {
-
         User.findOne({
             where: { id: token.user_id }
         })
         
         .then( user => {
-            let main_photo = null;
-    
-            Course.create({
+
+            course_json = {
                 user_id: user.id,
                 user_nickname: user.nickname,
-                category: category,
+                thema: thema,
                 title: title,
-                contents: contents,
-                dday: dday
-            })
+                dday: dday,
+                main_photo: image_db_path + thema + '.jpg'
+            }
+
+            for(let i = 0; i < bf.length; i++ )
+            {
+                let key1 = "course_info" + (i+1);
+                let key2 = "shopname" + (i+1);
+                course_json[key1] = bf[i].id;
+                course_json[key2] = bf[i].shopname;
+            }
+
+            Course.create(course_json)
             
             .then( course => {
-                if(file)
-                {
-                    let file = req.file;
-                    oldFilename = image_path + "default_main_" + file.originalname;
-                    newFilename = image_path + course.id + image_middle_path + file.originalname;
-
-                    fs.rename( oldFilename , newFilename, 
-                        function (err) { 
-                            if (err) 
-                            {
-                                res.json({
-                                    message: "file update error (course create)"
-                                });
-                                throw err; 
-                            }
-                        }
-                    );
-
-                    return Course.update(
-                        { main_photo: image_db_path + course.id + image_middle_path + file.originalname },
-                        { where : { id: course.id }}
-                    ).then( upt => {
-                        res.json({
-                            code: 200,
-                            message: "Create Success (course create)"
-                        });
-                    });
-                }
-                else
-                {
-                    res.json({
-                        code: 200,
-                        message: "Create Success (course create)"
-                    });
-                }
-            });
+                res.json({
+                    code: 200,
+                    message: "Create Success (course create)"
+                });
+            })
         })
         
         .catch( err => {
@@ -111,8 +84,8 @@ exports.readCourse = (req, res, next) => {
         .then( user => {
             let query = `
             SELECT 
-                courses.id, courses.user_id AS user_id, courses.user_nickname, courses.title,
-                courses.contents, courses.dday, courses.grade_avg, courses.main_photo,
+                courses.id, courses.user_id AS user_id, courses.thema, courses.user_nickname, 
+                courses.title, courses.dday, courses.grade_avg, courses.main_photo,
                 courses.course_info1, courses.course_info2, courses.course_info3, 
                 DATE_FORMAT(courses.created_at,'%Y-%m-%d') AS created_at,
                 course_likes.id AS liked,
@@ -139,36 +112,45 @@ exports.readCourse = (req, res, next) => {
 
         .then( courses => {
 
-            console.log(courses);
-            if( !courses[0].liked )
-                like = 0;
-            else
-                like = 1;
-
-            for( i = 0; i < Object.keys(courses).length; i++ )
+            if(courses)
             {
-                let json = {};
-                json.id = courses[i].info_id;
-                json.shopname = courses[i].shopname;
-                json.address = courses[i].address;
-                json.grade_avg = courses[i].info_grade_avg;
-                json.latitude = courses[i].latitude;
-                json.longitude = courses[i].longitude;
-                json.main_photo = courses[i].main_photo;
-                shops.push(json);
-            }
+                if( !courses[0].liked )
+                    like = 0;
+                else
+                    like = 1;
 
-            res.json({
-                id: courses[0].id,
-                user_nickname: courses[0].user_nickname,
-                title: courses[0].title,
-                contents: courses[0].contents,
-                dday: courses[0].dday,
-                grade_avg: courses[0].grade_avg,
-                like: like,
-                created_at: courses[0].created_at,
-                shops: shops
-            });
+                for( i = 0; i < Object.keys(courses).length; i++ )
+                {
+                    let json = {};
+                    json.id = courses[i].info_id;
+                    json.shopname = courses[i].shopname;
+                    json.address = courses[i].address;
+                    json.grade_avg = courses[i].info_grade_avg;
+                    json.latitude = courses[i].latitude;
+                    json.longitude = courses[i].longitude;
+                    json.main_photo = courses[i].main_photo;
+                    shops.push(json);
+                }
+
+                res.json({
+                    id: courses[0].id,
+                    user_nickname: courses[0].user_nickname,
+                    thema: courses[0].thema,
+                    title: courses[0].title,
+                    dday: courses[0].dday,
+                    grade_avg: courses[0].grade_avg,
+                    like: like,
+                    created_at: courses[0].created_at,
+                    shops: shops
+                });
+            }
+            else 
+            {
+                res.json({
+                    code: 200,
+                    message: "no data"
+                })
+            }
         });
     }
     else
@@ -185,13 +167,12 @@ exports.readCourse = (req, res, next) => {
 //COURSE READ - LIST
 exports.readCourseList = (req, res, next) => {
     let token = jwt_util.getAccount(req.headers.authorization);
-    let courses = [], info_id_array = [], info_id_set = [], set_index = 0;
     
     if( typeof token != 'undefined')
     {
         let query = `
         SELECT 
-            courses.id, courses.user_nickname, courses.title, courses.dday, courses.grade_avg, courses.main_photo,
+            courses.id, courses.thema, courses.user_nickname, courses.title, courses.dday, courses.grade_avg, courses.main_photo,
             courses.course_info1 AS shop_id1, courses.shopname1, courses.course_info2 AS shop_id2, courses.shopname2, courses.course_info3 AS shop_id3, courses.shopname3, 
             DATE_FORMAT(courses.created_at,'%Y-%m-%d') AS created_at
         FROM courses
@@ -216,15 +197,15 @@ exports.readCourseList = (req, res, next) => {
                     }
                     course_array[i].shops = [
                         {
-                            shop_id: course_array[i].shop_id1,
+                            id: course_array[i].shop_id1,
                             shopname: course_array[i].shopname1
                         },
                         {
-                            shop_id: course_array[i].shop_id2,
+                            id: course_array[i].shop_id2,
                             shopname: course_array[i].shopname2
                         },
                         {
-                            shop_id: course_array[i].shop_id3,
+                            id: course_array[i].shop_id3,
                             shopname: course_array[i].shopname3
                         }
                     ];
@@ -259,14 +240,14 @@ exports.readCourseList = (req, res, next) => {
 //MY COURSE READ - LIST
 exports.readMyCourse = (req, res, next) => {
     let token = jwt_util.getAccount(req.headers.authorization);
-    let user_id = token.user_id;
 
     if( typeof token != 'undefined')
     {
+        let user_id = token.user_id;
         //공유 받은 코스와 내가 만든 코스들 모두 select
         let query = `
         SELECT 
-            courses.id, courses.title, courses.dday, courses.grade_avg, courses.main_photo,
+            courses.id, courses.thema, courses.title, courses.dday, courses.grade_avg, courses.main_photo,
             courses.course_info1 AS shop_id1, courses.shopname1, courses.course_info2 AS shop_id2, courses.shopname2, courses.course_info3 AS shop_id3, courses.shopname3, 
             DATE_FORMAT(courses.created_at,'%Y-%m-%d') AS created_at, COUNT(course_shares.course_id) AS share
         FROM hanium.courses 
@@ -295,15 +276,15 @@ exports.readMyCourse = (req, res, next) => {
                     }
                     course_array[i].shops = [
                         {
-                            shop_id: course_array[i].shop_id1,
+                            id: course_array[i].shop_id1,
                             shopname: course_array[i].shopname1
                         },
                         {
-                            shop_id: course_array[i].shop_id2,
+                            id: course_array[i].shop_id2,
                             shopname: course_array[i].shopname2
                         },
                         {
-                            shop_id: course_array[i].shop_id3,
+                            id: course_array[i].shop_id3,
                             shopname: course_array[i].shopname3
                         }
                     ];
@@ -338,16 +319,14 @@ exports.readMyCourse = (req, res, next) => {
 //COURSE UPDATE
 exports.updateCourse = (req, res, next) => {
     let course_id = req.body.id;
-    let { category, title, dday, contents, shop_id1, shopname1, shop_id2, shopname2, shop_id3, shopname3} = req.body;
-    let file = req.file;
+    let { thema, title, dday, shops} = req.body;
     let token = jwt_util.getAccount(req.headers.authorization);
+    let course_json = {}, bf= JSON.parse(shops);
 
     if( typeof token != 'undefined')
     {
 
         let user_id = token.user_id;
-
-        let newFilename = (file) ? (image_db_path + course_id + image_middle_path + file.originalname) : (image_db_path + default_image_name)
 
         // 수정할 권한이 있는지 확인 ( 내소유 or 공유 받은 코스 )
         let query = `
@@ -376,37 +355,25 @@ exports.updateCourse = (req, res, next) => {
 
             if( course )
             {
-                let oldFilename = course[0].main_photo;
-                console.log(env.pp+oldFilename);
-                if( (oldFilename != newFilename) && (oldFilename != (image_db_path + default_image_name)))
+                course_json = {
+                    thema: thema,
+                    title: title,
+                    dday: dday,
+                    main_photo: image_db_path + thema + '.jpg'
+                }
+    
+                for(let i = 0; i < bf.length; i++ )
                 {
-                    fs.unlink( env.PP + oldFilename, function (err) {
-                        if(err)
-                        {
-                            res.json({
-                                message: "file delete error (course update)"
-                            });
-                            throw err; 
-                        }
-                    })
+                    let key1 = "course_info" + (i+1);
+                    let key2 = "shopname" + (i+1);
+                    course_json[key1] = bf[i].id;
+                    course_json[key2] = bf[i].shopname;
                 }
             
-                Course.update({
-                    category: category, 
-                    title: title, 
-                    dday: dday, 
-                    contents: contents,
-                    main_photo: newFilename,
-                    course_info1: shop_id1,
-                    shopname1: shopname1,
-                    course_info2: shop_id2, 
-                    shopname2: shopname2,
-                    course_info3: shop_id3,
-                    shopname3: shopname3
-                },
-                {
-                    where: {id: course_id}
-                })
+                Course.update(
+                    course_json,
+                    { where: {id: course_id} }
+                )
 
                 .then( updated_course => {
                     res.send({

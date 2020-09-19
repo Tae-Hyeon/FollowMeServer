@@ -17,18 +17,13 @@ module.exports = (sequelize, DataTypes) => {
             allowNULL: false
         },
 
-        category: {
+        thema: {
             type: DataTypes.INTEGER,
             allowNULL: true
         },
 
         title: {
             type: DataTypes.STRING(200),
-            allowNULL: false
-        },
-
-        contents: {
-            type: DataTypes.STRING(1000),
             allowNULL: false
         },
 

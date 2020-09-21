@@ -23,8 +23,8 @@ db.User = require('./user')(sequelize, Sequelize);
 db.Info = require('./info')(sequelize, Sequelize);
 db.InfoLike = require('./info_like')(sequelize, Sequelize);
 db.InfoReview = require('./info_review')(sequelize, Sequelize);
-db.InfoTag = require('./info_tag')(sequelize, Sequelize);
-db.Tag = require('./tag')(sequelize, Sequelize);
+db.InfoThema = require('./info_thema')(sequelize, Sequelize);
+db.Thema = require('./thema')(sequelize, Sequelize);
 
 // Model간 관계
 //InfoLike fk - User, Info {id}     N:M
@@ -54,10 +54,10 @@ db.Info.belongsToMany(db.User, {
   sourceKey: 'id'
 });
 
-//InfoTag fk - Info, Tag {id}     N:M
-db.Info.hasMany(db.InfoTag, { foreignKey: 'info_id', sourceKey: 'id'});
-db.Tag.hasMany(db.InfoTag, { foreignKey: 'tag_id', sourceKey: 'id'});
-db.Info.belongsToMany(db.Tag, { through: 'info_tag'});
-db.Tag.belongsToMany(db.Info, { through: 'info_tag'});
+//InfoThema fk - Info, Thema {id}     N:M
+db.Info.hasMany(db.InfoThema, { foreignKey: 'info_id', sourceKey: 'id'});
+db.Thema.hasMany(db.InfoThema, { foreignKey: 'thema_id', sourceKey: 'id'});
+db.Info.belongsToMany(db.Thema, { through: 'info_thema'});
+db.Thema.belongsToMany(db.Info, { through: 'info_thema'});
 
 module.exports = db;

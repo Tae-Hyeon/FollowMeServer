@@ -1,6 +1,6 @@
 const env = process.env;
 const { Sequelize, sequelize, Op, QueryTypes} = require('sequelize');
-const { User, Info, InfoLike, InfoReview, InfoTag} = require('../models');
+const { User, Info, InfoLike, InfoReview, InfoThema} = require('../models');
 const model = require('../models');
 
 const jwt_util = require('../js/jwt_util');
@@ -17,15 +17,14 @@ exports.createShop = (req, res, next) => {
 
     let { 
         category, shopname, address, menu, operating_time, 
-        latitude, longitude, tag1, tag2, tag3,
-        main_photo
+        latitude, longitude, thema1, thema2, thema3, main_photo
     } = req.body;
 
     let files = req.files;
 
     let token = jwt_util.getAccount(req.headers.authorization);
 
-    if( typeof token !== 'undefined')
+    if( typeof token != 'undefined')
     {
 
         User.findOne({
@@ -46,37 +45,26 @@ exports.createShop = (req, res, next) => {
                     operating_time: operating_time,
                     grade_avg: 0,
                     latitude: latitude,
-                    longitude: longitude,
-                    // main_photo: main_photo,
-                    // photo1: photo1,
-                    // photo2: photo2,
-                    // photo3: photo3,
-                    // photo4: photo4,
-                    // photo5: photo5,
-                    // photo6: photo6,
-                    // photo7: photo7,
-                    // photo8: photo8,
-                    // photo9: photo9,
-                    // photo10: photo10
+                    longitude: longitude
                 })
                 
                 .then( info => {
 
-                    // create tag
-                    if( !(tag1 == null && tag2 == null && tag3 == null) )
+                    // create thema
+                    if( !(thema1 == null && thema2 == null && thema3 == null) )
                     {
 
-                        let infotags = []
+                        let infothemas = []
 
-                        if( tag1 )
-                            infotags[0] = { info_id: info.id, tag_id: tag1 };
-                        if( tag2 )
-                            infotags[1] = { info_id: info.id, tag_id: tag2 };
-                        if( tag3 )
-                            infotags[2] = { info_id: info.id, tag_id: tag3 };
+                        if( thema1 )
+                            infothemas[0] = { info_id: info.id, thema_id: thema1 };
+                        if( thema2 )
+                            infothemas[1] = { info_id: info.id, thema_id: thema2 };
+                        if( thema3 )
+                            infothemas[2] = { info_id: info.id, thema_id: thema3 };
                             
 
-                        InfoTag.bulkCreate(infotags)
+                        InfoThema.bulkCreate(infothemas)
 
                         .then( () => { 
                             res.json({
@@ -85,7 +73,7 @@ exports.createShop = (req, res, next) => {
                             });  
                         });
                     }
-                    else // no create tag
+                    else // no create thema
                     {
 
                         res.json({
@@ -132,7 +120,7 @@ exports.readShop = (req, res, next) => {
     let token = jwt_util.getAccount(req.headers.authorization);
     //console.log(info_id, token);
 
-    if( typeof token !== 'undefined')
+    if( typeof token != 'undefined')
     {
         
         User.findOne({
@@ -142,11 +130,6 @@ exports.readShop = (req, res, next) => {
         .then( user => {
             return Info.findOne({
                 include: [
-                    {
-                        model: InfoTag,
-                        required: false,
-                        where: { info_id : info_id }
-                    }, 
                     {
                         model: InfoLike,
                         required: false, // left outer join
@@ -158,9 +141,6 @@ exports.readShop = (req, res, next) => {
         })
 
         .then( info => {
-            let tag1 = (info.info_tags[0] == null) ? null : info.info_tags[0].tag_id;
-            let tag2 = (info.info_tags[1] == null) ? null : info.info_tags[1].tag_id;
-            let tag3 = (info.info_tags[2] == null) ? null : info.info_tags[2].tag_id;
 
             if( !info.info_like )
                 like = 0;
@@ -178,9 +158,6 @@ exports.readShop = (req, res, next) => {
                 latitude: info.latitude,
                 longitude: info.longitude,
                 like: like,
-                tag1: tag1,
-                tag2: tag2,
-                tag3: tag3,
                 main_photo: info.main_photo,
                 photos: [
                     info.photo1,
@@ -210,33 +187,39 @@ exports.readShop = (req, res, next) => {
 
 //Shop Info Read - List
 exports.readShopList = (req, res, next) => {
-    let { category, tag } = req.query;
+    let { category, thema } = req.query;
     let token = jwt_util.getAccount(req.headers.authorization);
 
     let category_json = (category) ? {'category': category} : {};
-    let tag_json = (tag) ? {'tag_id': tag} : {};
+    let thema_json = (thema) ? {'thema_id': thema} : {};
 
-    if( typeof token !== 'undefined')
+    let query = {
+        attributes: { 
+            exclude : ['createdAt', 'updatedAt', 'deletedAt'] 
+        }
+    }
+
+    if (category)
+        query.where = category_json
+    if (thema)
+    {
+        query.include = [
+            {
+                attributes: {
+                    include : ['thema_id'],
+                    exclude : ['created_at', 'updated_at', 'deleted_at']
+                },
+                model: InfoThema,
+                required: true,
+                where: thema_json
+            }
+        ]
+    }
+
+    if( typeof token != 'undefined')
     {
 
-        Info.findAll({
-            attributes: { 
-                exclude : ['createdAt', 'updatedAt', 'deletedAt'] 
-            },
-            include: [
-                {
-                    attributes: {
-                        include : ['tag_id'],
-                        exclude : ['created_at', 'updated_at', 'deleted_at']
-                    },
-                    model: InfoTag,
-                    required: false,
-                    where: tag_json
-                }
-            ],
-
-            where: category_json
-        })
+        Info.findAll(query)
 
         .then( infos => {
             let shopnum = Object.keys(infos).length;
@@ -274,14 +257,14 @@ exports.updateShop = (req, res, next) => {
     let info_id = req.body.id;
     let { 
         category, shopname, address, menu, operating_time, 
-        latitude, longitude, tag1, tag2, tag3, main_photo
+        latitude, longitude, thema1, thema2, thema3, main_photo
     } = req.body;
 
     let token = jwt_util.getAccount(req.headers.authorization);
-    let tags, parameter_set, infotag_id, query;
+    let themas, parameter_set, infothema_id, query;
     let info_backup;
 
-    if( typeof token !== 'undefined')
+    if( typeof token != 'undefined')
     {
 
         User.findOne({
@@ -321,33 +304,33 @@ exports.updateShop = (req, res, next) => {
 
                 .then( info => {
 
-                    return InfoTag.findAll({
+                    return InfoThema.findAll({
                         where: { info_id: info_id }
                     })
 
                 })
 
-                .then( infotags => {
+                .then( infothemas => {
                     
-                    tags_backup = infotags;
-                    tags = crud_util.getTagArray(tag1, tag2, tag3);
-                    parameter_set = crud_util.getParamsArray(infotags, tags);
-                    infotag_id = parameter_set[0];
-                    tags = parameter_set[1];
+                    themas_backup = infothemas;
+                    themas = crud_util.getThemaArray(thema1, thema2, thema3);
+                    parameter_set = crud_util.getParamsArray(infothemas, themas);
+                    infothema_id = parameter_set[0];
+                    themas = parameter_set[1];
                     query = parameter_set[2];
                     
-                    return crud_util.execCRUD(infotag_id[0], info_id, tags[0], query[0]);
+                    return crud_util.execCRUD(infothema_id[0], info_id, themas[0], query[0]);
                 })
 
-                .then( infotag1 => {
-                    return crud_util.execCRUD(infotag_id[1], info_id, tags[1], query[1]);
+                .then( infothema1 => {
+                    return crud_util.execCRUD(infothema_id[1], info_id, themas[1], query[1]);
                 })
 
-                .then( infotag2 => {
-                    return crud_util.execCRUD(infotag_id[2], info_id, tags[2], query[2]);
+                .then( infothema2 => {
+                    return crud_util.execCRUD(infothema_id[2], info_id, themas[2], query[2]);
                 })
 
-                .then( infotag3 => {
+                .then( infothema3 => {
                     res.json({
                         code: 200,
                         message:"Update Success"
@@ -355,7 +338,7 @@ exports.updateShop = (req, res, next) => {
                 })
 
                 .catch( err => {
-                    console.log("error occure in tag update \n"+ err);
+                    console.log("error occure in thema update \n"+ err);
                     //backup transaction 시간날 때 찾아보기.
                     Info.update(
                         {
@@ -374,15 +357,15 @@ exports.updateShop = (req, res, next) => {
 
                     // .then( info => {
 
-                    //     if(tags_backup)
-                    //         return crud_util.getform(tags_backup[0].id, info_id, tags_backup[0].tag_id, backup_query[0]);
+                    //     if(themas_backup)
+                    //         return crud_util.getform(themas_backup[0].id, info_id, themas_backup[0].thema_id, backup_query[0]);
                     //     else
                     //         return new Promise();
                     // })
 
-                    // .then( infotag1 => {
-                    //     if(tags_backup[1])
-                    //         return crud_util.getform(tags_backup[1].id, info_id, tags_backup[1].tag_id, backup_query[1])
+                    // .then( infothema1 => {
+                    //     if(themas_backup[1])
+                    //         return crud_util.getform(themas_backup[1].id, info_id, themas_backup[1].thema_id, backup_query[1])
                     //     else
                     //     {
                     //         return new Promise( (resolve, reject) => {
@@ -391,9 +374,9 @@ exports.updateShop = (req, res, next) => {
                     //     }
                     // })
 
-                    // .then( infotag2 => {
-                    //     if(tags_backup[2])
-                    //         return crud_util.getform(tags_backup[2].id, info_id, tags_backup[2].tag_id, backup_query[2])
+                    // .then( infothema2 => {
+                    //     if(themas_backup[2])
+                    //         return crud_util.getform(themas_backup[2].id, info_id, themas_backup[2].thema_id, backup_query[2])
                     //     else
                     //     {
                     //         return new Promise( (resolve, reject) => {
@@ -453,7 +436,7 @@ exports.deleteShop = (req, res, next) => {
     let info_id = req.body.id;
     let token = jwt_util.getAccount(req.headers.authorization);
 
-    if( typeof token !== 'undefined')
+    if( typeof token != 'undefined')
     {
 
         User.findOne({
@@ -519,7 +502,7 @@ exports.likeShop = (req, res, next) => {
     let info_id = req.body.id;
     let token = jwt_util.getAccount(req.headers.authorization);
 
-    if( typeof token !== 'undefined')
+    if( typeof token != 'undefined')
     {
         // 테스트로는 token의 user_id를 받아서 user를 따로 조회 안하도록 만듦 -> 나중에 수정 가능
         InfoLike.findOne({
@@ -580,7 +563,7 @@ exports.dislikeShop = (req, res, next) => {
     let info_id = req.body.id;
     let token = jwt_util.getAccount(req.headers.authorization);
 
-    if( typeof token !== 'undefined')
+    if( typeof token != 'undefined')
     {
         let info_json = {};
         let info_array = info_id.split(',');
@@ -652,7 +635,7 @@ exports.readLikeList = (req, res, next) => {
     let info_id = req.query.id;
     let token = jwt_util.getAccount(req.headers.authorization);
 
-    if( typeof token !== 'undefined')
+    if( typeof token != 'undefined')
     {
 
         Info.findAll({
@@ -708,7 +691,7 @@ exports.readReviews = (req, res, next) => {
     let shop_id = req.query.id;
     let token = jwt_util.getAccount(req.headers.authorization);
 
-    if( typeof token !== 'undefined')
+    if( typeof token != 'undefined')
     {
         let query = `
         SELECT 
@@ -780,7 +763,7 @@ exports.createReview = (req, res, next) => {
     let { shop_id, grade, review } = req.body;
     let token = jwt_util.getAccount(req.headers.authorization);
 
-    if( typeof token !== 'undefined')
+    if( typeof token != 'undefined')
     {
         InfoReview.create({
                 info_id: shop_id,
@@ -832,7 +815,7 @@ exports.updateReview = (req, res, next) => {
     let token = jwt_util.getAccount(req.headers.authorization);
     let before_grade;
 
-    if( typeof token !== 'undefined')
+    if( typeof token != 'undefined')
     {
         InfoReview.findOne({
             where : { id: review_id }
@@ -904,7 +887,7 @@ exports.deleteReview = (req, res, next) => {
     let info_id = req.body.id;
     let token = jwt_util.getAccount(req.headers.authorization);
 
-    if( typeof token !== 'undefined')
+    if( typeof token != 'undefined')
     {
         InfoReview.findOne({
             where : {

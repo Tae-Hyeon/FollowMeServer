@@ -1,5 +1,5 @@
 module.exports = (sequelize, DataTypes) => {
-    return sequelize.define('info_tag', {
+    return sequelize.define('info_thema', {
 
         id: {
             type: DataTypes.INTEGER,
@@ -13,7 +13,7 @@ module.exports = (sequelize, DataTypes) => {
             allowNULL: false
         },
 
-        tag_id: {
+        thema_id: {
             type: DataTypes.INTEGER,
             allowNULL: false
         },

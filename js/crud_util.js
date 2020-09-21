@@ -1,5 +1,4 @@
-const {InfoTag } = require('../models');
-const { readShopList } = require('../controller/shop.controller');
+const {InfoThema } = require('../models');
 
 exports.getShopData = (info) => {
     return new Promise( resolve => {
@@ -21,43 +20,43 @@ exports.getShopData = (info) => {
     })
 }
 
-exports.getTagArray = (tag1, tag2, tag3) => {
-    let tag = []
-    let arr = [tag1, tag2, tag3];
+exports.getThemaArray = (thema1, thema2, thema3) => {
+    let thema = []
+    let arr = [thema1, thema2, thema3];
     arr.forEach(element => {
         if(element)
-            tag.push(Number(element));
+            thema.push(Number(element));
     });
-    return tag;
+    return thema;
 };
 
-exports.getParamsArray = (infotags, tags) => {
-    let infotag_id_nothing = []; 
-    let infotag_id_crud = [];
-    let tag_id = [];
-    let crt = tags;
+exports.getParamsArray = (infothemas, themas) => {
+    let infothema_id_nothing = []; 
+    let infothema_id_crud = [];
+    let thema_id = [];
+    let crt = themas;
     let query = [];
-    let before_leng = Object.keys(infotags).length;
-    let after_leng = tags.length;
+    let before_leng = Object.keys(infothemas).length;
+    let after_leng = themas.length;
 
-    infotags.forEach(element => {
+    infothemas.forEach(element => {
         if(element)
-            infotag_id_crud.push(element.id);
+            infothema_id_crud.push(element.id);
     });
-    infotag_id_crud;
+    infothema_id_crud;
 
-    infotags.forEach(element => {
+    infothemas.forEach(element => {
         if(element)
         {
-            let isBeing = crt.indexOf(element.tag_id);
-            let isBeing2 = crt.findIndex(tag => tag == element.tag_id);
-            console.log(isBeing, isBeing2, typeof element.tag_id, typeof crt[0]);
+            let isBeing = crt.indexOf(element.thema_id);
+            let isBeing2 = crt.findIndex(thema => thema == element.thema_id);
+            console.log(isBeing, isBeing2, typeof element.thema_id, typeof crt[0]);
             if(isBeing != -1)
             {
                 query.push("nothing");
-                infotag_id_nothing.push(element.id);
-                infotag_id_crud.splice(infotag_id_crud.indexOf(element.id), 1);
-                tag_id.push(-1);
+                infothema_id_nothing.push(element.id);
+                infothema_id_crud.splice(infothema_id_crud.indexOf(element.id), 1);
+                thema_id.push(-1);
                 crt.splice(isBeing, 1);
                 before_leng--; after_leng--;
             }
@@ -79,21 +78,21 @@ exports.getParamsArray = (infotags, tags) => {
         }
         else if(before_leng < after_leng)
         {
-            infotag_id_crud.push(-1);
+            infothema_id_crud.push(-1);
             query.push("create");
             after_leng--;
         }
     }
 
-    return [infotag_id_nothing.concat(infotag_id_crud), tag_id.concat(crt), query];
+    return [infothema_id_nothing.concat(infothema_id_crud), thema_id.concat(crt), query];
 };
 
-exports.execCRUD = ( id, info_id, tag_id, query) => { 
-    console.log(id, info_id, tag_id, query);
+exports.execCRUD = ( id, info_id, thema_id, query) => { 
+    console.log(id, info_id, thema_id, query);
     if(query == "update")
     {
-        return InfoTag.update(
-            { tag_id: tag_id },
+        return InfoThema.update(
+            { thema_id: thema_id },
             { 
                 where: { 
                     info_id: info_id, 
@@ -104,14 +103,14 @@ exports.execCRUD = ( id, info_id, tag_id, query) => {
     }
     else if(query == "create")
     {
-        return InfoTag.create({
+        return InfoThema.create({
             info_id: info_id,
-            tag_id: tag_id
+            thema_id: thema_id
         });
     }
     else if(query == "delete")
     {
-        return InfoTag.destroy({
+        return InfoThema.destroy({
             where :{
                 id: id
             }

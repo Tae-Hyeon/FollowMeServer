@@ -1,15 +1,16 @@
-var express = require('express');
-var path = require('path');
-var logger = require('morgan');
-var cookieParser = require('cookie-parser');
-var bodyParser = require('body-parser');
-var passport = require('passport');
-//const passportConfig = require('./passport');
-var { sequelize } = require('sequelize');
-var index = require('./routes/index');
-var users = require('./routes/users');
+const express = require('express');
+const path = require('path');
+const logger = require('morgan');
+const cookieParser = require('cookie-parser');
 
-var app = express();
+const { sequelize } = require('sequelize');
+const models = require("./models/index.js");
+
+const indexRouter = require('./routes/index');
+const shopRouter = require('./routes/shop'); // 가게 CRUD
+const shopAutoInput = require('./routes/shopAutoInput'); // 가게 정보 자동 입력
+
+const app = express();
 require('dotenv').config();
 
 // sync
@@ -31,8 +32,10 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
-app.use('/', index);
-app.use('/users', users);
+app.use('/', indexRouter);
+//app.use('/users', users);
+app.use('/shop', shopRouter);
+app.use('/shopAuto', shopAutoInput);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
